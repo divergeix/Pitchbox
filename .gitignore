@@ -1,0 +1,19 @@
+node_modules/
+dist/
+*.zip
+
+# Environment files
+.env
+.env.local
+local.settings.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.tsbuildinfo

@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #0a0a0f;
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0a0a0f;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #1e1e2e;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2e2e3e;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-pitch-surface border border-pitch-border rounded-lg p-4;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-strong {
+    @apply badge bg-green-900/40 text-green-400 border border-green-800/50;
+  }
+
+  .badge-inferred {
+    @apply badge bg-yellow-900/40 text-yellow-400 border border-yellow-800/50;
+  }
+
+  .badge-low {
+    @apply badge bg-red-900/40 text-red-400 border border-red-800/50;
+  }
+
+  .btn-primary {
+    @apply bg-pitch-accent hover:bg-pitch-accent-hover text-white font-medium py-2 px-4 rounded-lg transition-colors duration-150;
+  }
+
+  .btn-secondary {
+    @apply bg-pitch-surface hover:bg-pitch-border text-pitch-text border border-pitch-border font-medium py-2 px-4 rounded-lg transition-colors duration-150;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-pitch-border text-pitch-text-muted font-medium py-2 px-4 rounded-lg transition-colors duration-150;
+  }
+
+  .input-field {
+    @apply bg-pitch-bg border border-pitch-border rounded-lg px-3 py-2 text-pitch-text placeholder-pitch-text-muted focus:outline-none focus:border-pitch-accent transition-colors duration-150 w-full;
+  }
+
+  .section-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-pitch-text-muted mb-2;
+  }
+}

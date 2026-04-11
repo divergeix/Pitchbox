@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(az --version)",
+      "Bash(gh auth:*)",
+      "Bash(az account:*)"
+    ]
+  }
+}

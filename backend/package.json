@@ -1,0 +1,24 @@
+{
+  "name": "pitchbox-backend",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "func start",
+    "dev": "tsc -w & func start"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.2.0",
+    "@azure/functions": "^4.5.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "razorpay": "^2.9.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "azure-functions-core-tools": "^4.0.6280",
+    "typescript": "^5.7.2"
+  }
+}
