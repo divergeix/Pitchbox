@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'crypto';
+import crypto from 'crypto';
 import { findUserByEmail, createUser, UserRecord } from '../../lib/cosmos-client.js';
 import { generateToken } from '../../lib/auth-middleware.js';
 
