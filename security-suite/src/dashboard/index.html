@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Suite - Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">&#9741;</span>
+        <span class="logo-text">SecureSuite</span>
+      </div>
+      <div class="version">v1.0.0</div>
+    </div>
+    <ul class="nav-items">
+      <li class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">&#9632;</span> Dashboard
+      </li>
+      <li class="nav-item" data-page="network">
+        <span class="nav-icon">&#9700;</span> Network Scanner
+      </li>
+      <li class="nav-item" data-page="ssl">
+        <span class="nav-icon">&#9733;</span> SSL/TLS Analyzer
+      </li>
+      <li class="nav-item" data-page="headers">
+        <span class="nav-icon">&#9783;</span> Header Checker
+      </li>
+      <li class="nav-item" data-page="dns">
+        <span class="nav-icon">&#8853;</span> DNS Security
+      </li>
+      <li class="nav-item" data-page="vulnerability">
+        <span class="nav-icon">&#9888;</span> Vulnerability Scanner
+      </li>
+      <li class="nav-item" data-page="malware">
+        <span class="nav-icon">&#9763;</span> Malware Scanner
+      </li>
+      <li class="nav-item" data-page="password">
+        <span class="nav-icon">&#9919;</span> Password Security
+      </li>
+      <li class="nav-item" data-page="firewall">
+        <span class="nav-icon">&#9780;</span> Firewall
+      </li>
+      <li class="nav-item" data-page="ids">
+        <span class="nav-icon">&#9673;</span> IDS Monitor
+      </li>
+      <li class="nav-item" data-page="threat">
+        <span class="nav-icon">&#9760;</span> Threat Intel
+      </li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="status-indicator" id="ws-status">
+        <span class="status-dot"></span> <span id="ws-status-text">Connecting...</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="content">
+    <!-- Dashboard Page -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Security Dashboard</h1>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="runFullScan()">Full Scan</button>
+          <button class="btn btn-secondary" onclick="refreshStats()">Refresh</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-scans">0</div>
+          <div class="stat-label">Total Scans</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-findings">0</div>
+          <div class="stat-label">Findings</div>
+        </div>
+        <div class="stat-card critical">
+          <div class="stat-value" id="stat-critical">0</div>
+          <div class="stat-label">Critical</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-value" id="stat-alerts">0</div>
+          <div class="stat-label">Active Alerts</div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>System Status</h2>
+            <span class="badge" id="system-status">Healthy</span>
+          </div>
+          <div class="card-body">
+            <div class="threat-meter">
+              <div class="threat-level" id="threat-level"></div>
+              <div class="threat-labels">
+                <span>Safe</span><span>Low</span><span>Medium</span><span>High</span><span>Critical</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>Module Status</h2></div>
+          <div class="card-body">
+            <div class="module-list" id="module-list"></div>
+          </div>
+        </div>
+
+        <div class="card full-width">
+          <div class="card-header"><h2>Recent Scan Results</h2></div>
+          <div class="card-body">
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Module</th>
+                    <th>Target</th>
+                    <th>Findings</th>
+                    <th>Risk</th>
+                    <th>Duration</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-scans"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network Scanner Page -->
+    <div class="page" id="page-network">
+      <div class="page-header"><h1>Network Scanner</h1></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="form-group">
+            <label>Target Host</label>
+            <input type="text" id="net-host" placeholder="e.g., 192.168.1.1 or example.com" class="input">
+          </div>
+          <div class="form-group">
+            <label>Ports (optional)</label>
+            <input type="text" id="net-ports" placeholder="e.g., 80,443,8080 or 1-1024" class="input">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Timeout (ms)</label>
+              <input type="number" id="net-timeout" value="3000" class="input">
+            </div>
+            <div class="form-group">
+              <label>Concurrency</label>
+              <input type="number" id="net-concurrency" value="50" class="input">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="runNetworkScan()">Scan Ports</button>
+        </div>
+      </div>
+      <div class="card" id="net-results" style="display:none;">
+        <div class="card-header"><h2>Results</h2></div>
+        <div class="card-body" id="net-results-body"></div>
+      </div>
+    </div>
+
+    <!-- SSL Analyzer Page -->
+    <div class="page" id="page-ssl">
+      <div class="page-header"><h1>SSL/TLS Analyzer</h1></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="form-group">
+            <label>Host</label>
+            <input type="text" id="ssl-host" placeholder="e.g., example.com" class="input">
+          </div>
+          <div class="form-group">
+            <label>Port (default: 443)</label>
+            <input type="number" id="ssl-port" value="443" class="input">
+          </div>
+          <button class="btn btn-primary" onclick="runSSLScan()">Analyze SSL/TLS</button>
+        </div>
+      </div>
+      <div class="card" id="ssl-results" style="display:none;">
+        <div class="card-header"><h2>Results</h2></div>
+        <div class="card-body" id="ssl-results-body"></div>
+      </div>
+    </div>
+
+    <!-- Header Checker Page -->
+    <div class="page" id="page-headers">
+      <div class="page-header"><h1>HTTP Security Headers</h1></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="form-group">
+            <label>URL</label>
+            <input type="text" id="hdr-url" placeholder="e.g., https://example.com" class="input">
+          </div>
+          <button class="btn btn-primary" onclick="runHeaderScan()">Check Headers</button>
+        </div>
+      </div>
+      <div class="card" id="hdr-results" style="display:none;">
+        <div class="card-header"><h2>Results</h2></div>
+        <div class="card-body" id="hdr-results-body"></div>
+      </div>
+    </div>
+
+    <!-- DNS Security Page -->
+    <div class="page" id="page-dns">
+      <div class="page-header"><h1>DNS Security</h1></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="form-group">
+            <label>Domain</label>
+            <input type="text" id="dns-domain" placeholder="e.g., example.com" class="input">
+          </div>
+          <button class="btn btn-primary" onclick="runDNSScan()">Check DNS Security</button>
+        </div>
+      </div>
+      <div class="card" id="dns-results" style="display:none;">
+        <div class="card-header"><h2>Results</h2></div>
+        <div class="card-body" id="dns-results-body"></div>
+      </div>
+    </div>
+
+    <!-- Vulnerability Scanner Page -->
+    <div class="page" id="page-vulnerability">
+      <div class="page-header"><h1>Vulnerability Scanner</h1></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="form-group">
+            <label>Target URL</label>
+            <input type="text" id="vuln-target" placeholder="e.g., https://example.com" class="input">
+          </div>
+          <button class="btn btn-primary" onclick="runVulnScan()">Scan for Vulnerabilities</button>
+        </div>
+      </div>
+      <div class="card" id="vuln-results" style="display:none;">
+        <div class="card-header"><h2>Results</h2></div>
+        <div class="card-body" id="vuln-results-body"></div>
+      </div>
+    </div>
+
+    <!-- Malware Scanner Page -->
+    <div class="page" id="page-malware">
+      <div class="page-header"><h1>Malware & File Integrity Scanner</h1></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="form-group">
+            <label>Scan Path</label>
+            <input type="text" id="mal-path" placeholder="e.g., /var/www/html" class="input">
+          </div>
+          <div class="form-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="mal-recursive" checked> Recursive
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="mal-signatures" checked> Check Signatures
+            </label>
+          </div>
+          <button class="btn btn-primary" onclick="runMalwareScan()">Scan Files</button>
+        </div>
+      </div>
+      <div class="card" id="mal-results" style="display:none;">
+        <div class="card-header"><h2>Results</h2></div>
+        <div class="card-body" id="mal-results-body"></div>
+      </div>
+    </div>
+
+    <!-- Password Security Page -->
+    <div class="page" id="page-password">
+      <div class="page-header"><h1>Password Security</h1></div>
+      <div class="card-row">
+        <div class="card">
+          <div class="card-header"><h2>Password Strength Analyzer</h2></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Password</label>
+              <div class="input-with-btn">
+                <input type="password" id="pwd-input" placeholder="Enter a password to analyze" class="input">
+                <button class="btn btn-small" onclick="togglePassword()">Show</button>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="analyzePasswordUI()">Analyze</button>
+            <button class="btn btn-secondary" onclick="checkBreachUI()">Check Breach</button>
+            <div id="pwd-results" style="margin-top:15px;"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Password Generator</h2></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Length</label>
+              <input type="range" id="pwd-length" min="8" max="64" value="20" oninput="document.getElementById('pwd-len-val').textContent=this.value">
+              <span id="pwd-len-val">20</span>
+            </div>
+            <button class="btn btn-primary" onclick="generatePasswordUI()">Generate</button>
+            <div id="pwd-generated" style="margin-top:15px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firewall Page -->
+    <div class="page" id="page-firewall">
+      <div class="page-header"><h1>Firewall Manager</h1></div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Firewall Status</h2>
+          <button class="btn btn-small" onclick="loadFirewallStatus()">Refresh</button>
+        </div>
+        <div class="card-body" id="fw-status"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Firewall Rules</h2>
+          <button class="btn btn-small btn-primary" onclick="showAddRuleForm()">Add Rule</button>
+        </div>
+        <div class="card-body" id="fw-rules"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Security Audit</h2></div>
+        <div class="card-body">
+          <button class="btn btn-primary" onclick="auditFirewallUI()">Run Audit</button>
+          <div id="fw-audit" style="margin-top:15px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IDS Page -->
+    <div class="page" id="page-ids">
+      <div class="page-header"><h1>Intrusion Detection System</h1></div>
+      <div class="card">
+        <div class="card-header">
+          <h2>IDS Status</h2>
+          <div>
+            <button class="btn btn-small btn-primary" onclick="startIDS()">Start</button>
+            <button class="btn btn-small btn-danger" onclick="stopIDS()">Stop</button>
+          </div>
+        </div>
+        <div class="card-body" id="ids-status"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Analyze Text</h2></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Paste log entries or request data</label>
+            <textarea id="ids-text" class="input textarea" rows="4" placeholder="Paste suspicious log entries or HTTP requests here..."></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="analyzeTextIDS()">Analyze</button>
+          <div id="ids-analyze-results" style="margin-top:15px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Alerts</h2>
+          <button class="btn btn-small btn-danger" onclick="clearAlertsIDS()">Clear All</button>
+        </div>
+        <div class="card-body" id="ids-alerts"></div>
+      </div>
+    </div>
+
+    <!-- Threat Intel Page -->
+    <div class="page" id="page-threat">
+      <div class="page-header"><h1>Threat Intelligence</h1></div>
+      <div class="card-row">
+        <div class="card">
+          <div class="card-header"><h2>IP Reputation Check</h2></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>IP Address</label>
+              <input type="text" id="ti-ip" placeholder="e.g., 8.8.8.8" class="input">
+            </div>
+            <button class="btn btn-primary" onclick="checkIPReputationUI()">Check IP</button>
+            <div id="ti-ip-results" style="margin-top:15px;"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Domain Reputation Check</h2></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Domain</label>
+              <input type="text" id="ti-domain" placeholder="e.g., example.com" class="input">
+            </div>
+            <button class="btn btn-primary" onclick="checkDomainReputationUI()">Check Domain</button>
+            <div id="ti-domain-results" style="margin-top:15px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Scan Modal -->
+    <div class="modal" id="full-scan-modal" style="display:none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Full Security Scan</h2>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Target (URL, domain, or IP)</label>
+            <input type="text" id="full-scan-target" placeholder="e.g., example.com" class="input">
+          </div>
+          <button class="btn btn-primary btn-full" onclick="executeFullScan()">Start Full Scan</button>
+          <div id="full-scan-progress" style="margin-top:15px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading" style="display:none;">
+      <div class="spinner"></div>
+      <p id="loading-text">Scanning...</p>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
