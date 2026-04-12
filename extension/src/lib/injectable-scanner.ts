@@ -32,7 +32,7 @@ export function injectableScanner() {
   ck('WordPress', 'CMS / Site Builder', function() { return html.includes('wp-content') || html.includes('wp-includes') || html.includes('/wp-json/') || metaGen.includes('wordpress'); }, 'WordPress signatures');
   ck('Drupal', 'CMS / Site Builder', function() { return html.includes('Drupal') || html.includes('drupal.js') || html.includes('drupal.org') || html.includes('sites/default/files') || html.includes('ajaxPageState') || metaGen.includes('drupal'); }, 'Drupal signatures');
   ck('Joomla', 'CMS / Site Builder', function() { return html.includes('/media/jui/') || html.includes('Joomla!') || metaGen.includes('joomla'); }, 'Joomla signatures');
-  ck('Shopify', 'CMS / Site Builder', function() { return html.includes('cdn.shopify.com') || html.includes('Shopify.theme') || html.includes('myshopify.com'); }, 'Shopify CDN/theme');
+  ck('Shopify', 'CMS / Site Builder', function() { return html.includes('Shopify.theme') || html.includes('myshopify.com') || !!doc.querySelector('meta[name="shopify-checkout-api-token"]') || (!!doc.querySelector('link[href*="cdn.shopify.com/s/files"]') && html.includes('Shopify.routes')); }, 'Shopify platform');
   ck('Webflow', 'CMS / Site Builder', function() { return html.includes('webflow.com') || html.includes('webflow.js') || metaGen.includes('webflow'); }, 'Webflow signatures');
   ck('Wix', 'CMS / Site Builder', function() { return html.includes('static.wixstatic.com') || html.includes('parastorage.com') || metaGen.includes('wix'); }, 'Wix signatures');
   ck('Squarespace', 'CMS / Site Builder', function() { return html.includes('squarespace.com') || metaGen.includes('squarespace'); }, 'Squarespace signatures');
@@ -83,7 +83,7 @@ export function injectableScanner() {
   ck('Turbo', 'Frontend Framework', function() { return html.includes('turbo.hotwired.dev') || html.includes('data-turbo'); }, 'Turbo/Hotwire signatures');
 
   // ========== CSS FRAMEWORKS (18) ==========
-  ck('Bootstrap', 'CSS Framework', function() { return html.includes('bootstrap.min.css') || html.includes('bootstrap.min.js') || html.includes('bootstrap/'); }, 'Bootstrap signatures');
+  ck('Bootstrap', 'CSS Framework', function() { return !!doc.querySelector('link[href*="bootstrap.min.css"]') || !!doc.querySelector('script[src*="bootstrap.min.js"]') || !!doc.querySelector('link[href*="bootstrap.css"]'); }, 'Bootstrap CSS/JS');
   ck('Tailwind CSS', 'CSS Framework', function() { return html.includes('tailwindcss') || html.includes('tailwind.min.css'); }, 'Tailwind CSS');
   ck('Bulma', 'CSS Framework', function() { return html.includes('bulma.min.css') || html.includes('bulma.css'); }, 'Bulma CSS');
   ck('Foundation', 'CSS Framework', function() { return html.includes('foundation.min.css') || html.includes('foundation.min.js'); }, 'Foundation CSS');
@@ -104,7 +104,7 @@ export function injectableScanner() {
 
   // ========== JS LIBRARIES (25) ==========
   ck('jQuery', 'Library', function() { return html.includes('jquery.min.js') || html.includes('jquery.js') || html.includes('jquery/'); }, 'jQuery script');
-  ck('jQuery UI', 'Library', function() { return html.includes('jquery-ui') || html.includes('jquery.ui'); }, 'jQuery UI');
+  ck('jQuery UI', 'Library', function() { return !!doc.querySelector('script[src*="jquery-ui"]') || !!doc.querySelector('script[src*="jquery.ui"]') || !!doc.querySelector('link[href*="jquery-ui"]'); }, 'jQuery UI script/css');
   ck('Lodash', 'Library', function() { return html.includes('lodash.min.js') || html.includes('lodash.js'); }, 'Lodash');
   ck('Moment.js', 'Library', function() { return html.includes('moment.min.js') || html.includes('moment.js'); }, 'Moment.js');
   ck('GSAP', 'Library', function() { return html.includes('gsap') || html.includes('TweenMax') || html.includes('greensock'); }, 'GSAP animation');
@@ -146,7 +146,7 @@ export function injectableScanner() {
   ck('Clicky', 'Analytics', function() { return html.includes('static.getclicky.com'); }, 'Clicky');
   ck('Chartbeat', 'Analytics', function() { return html.includes('chartbeat.net') || html.includes('chartbeat.com'); }, 'Chartbeat');
   ck('Parse.ly', 'Analytics', function() { return html.includes('parsely.com') || html.includes('cdn.parsely.com'); }, 'Parse.ly');
-  ck('Adobe Analytics', 'Analytics', function() { return html.includes('omniture') || html.includes('s_code') || html.includes('adobedtm.com'); }, 'Adobe Analytics');
+  ck('Adobe Analytics', 'Analytics', function() { return html.includes('adobedtm.com') || html.includes('omtrdc.net') || (html.includes('s_code.js') && html.includes('omniture')); }, 'Adobe Analytics');
   ck('Microsoft Clarity', 'Analytics', function() { return html.includes('clarity.ms'); }, 'Microsoft Clarity');
   ck('Crazy Egg', 'Analytics', function() { return html.includes('crazyegg.com'); }, 'Crazy Egg');
   ck('Mouseflow', 'Analytics', function() { return html.includes('mouseflow.com'); }, 'Mouseflow');
@@ -170,12 +170,12 @@ export function injectableScanner() {
   ck('Bing Ads', 'Ad Pixel', function() { return html.includes('bat.bing.com'); }, 'Bing Ads UET');
   ck('Criteo', 'Ad Pixel', function() { return html.includes('criteo.com') || html.includes('static.criteo.net'); }, 'Criteo');
   ck('Taboola', 'Ad Pixel', function() { return html.includes('tblcdn.com') || html.includes('taboola.com'); }, 'Taboola');
-  ck('Outbrain', 'Ad Pixel', function() { return html.includes('outbrain.com'); }, 'Outbrain');
+  ck('Outbrain', 'Ad Pixel', function() { return !!doc.querySelector('script[src*="outbrain.com"]'); }, 'Outbrain script');
   ck('AdRoll', 'Ad Pixel', function() { return html.includes('adroll.com') || html.includes('d.adroll.com'); }, 'AdRoll');
-  ck('DoubleClick', 'Ad Pixel', function() { return html.includes('doubleclick.net'); }, 'Google DoubleClick');
+  ck('DoubleClick', 'Ad Pixel', function() { return !!doc.querySelector('script[src*="doubleclick.net"]') || !!doc.querySelector('iframe[src*="doubleclick.net"]'); }, 'DoubleClick tag');
   ck('Amazon Ads', 'Ad Pixel', function() { return html.includes('amazon-adsystem.com'); }, 'Amazon Ads');
   ck('Hubspot Ads', 'Ad Pixel', function() { return html.includes('js.hs-analytics.net'); }, 'HubSpot Analytics');
-  ck('Google AdSense', 'Ad Pixel', function() { return html.includes('pagead2.googlesyndication.com') || html.includes('adsbygoogle'); }, 'Google AdSense');
+  ck('Google AdSense', 'Ad Pixel', function() { return !!doc.querySelector('script[src*="pagead2.googlesyndication.com"]') || !!doc.querySelector('ins.adsbygoogle'); }, 'Google AdSense');
 
   // ========== MARKETING & EMAIL (20) ==========
   ck('HubSpot', 'Marketing', function() { return html.includes('js.hs-scripts.com') || html.includes('hsforms.com') || html.includes('hbspt.forms.create'); }, 'HubSpot tracking');
@@ -350,7 +350,7 @@ export function injectableScanner() {
   ck('Qualtrics', 'Forms', function() { return html.includes('qualtrics.com'); }, 'Qualtrics');
   ck('Gravity Forms', 'Forms', function() { return html.includes('gravityforms') || html.includes('gform_'); }, 'Gravity Forms');
   ck('WPForms', 'Forms', function() { return html.includes('wpforms'); }, 'WPForms');
-  ck('Ninja Forms', 'Forms', function() { return html.includes('ninjaforms') || html.includes('nf-'); }, 'Ninja Forms');
+  ck('Ninja Forms', 'Forms', function() { return html.includes('ninja-forms') || html.includes('nf-form-content'); }, 'Ninja Forms');
   ck('Tally', 'Forms', function() { return html.includes('tally.so'); }, 'Tally forms');
   ck('Paperform', 'Forms', function() { return html.includes('paperform.co'); }, 'Paperform');
   ck('Wufoo', 'Forms', function() { return html.includes('wufoo.com'); }, 'Wufoo');
@@ -363,16 +363,12 @@ export function injectableScanner() {
   ck('HERE Maps', 'Maps', function() { return html.includes('here.com/maps') || html.includes('js.api.here.com'); }, 'HERE Maps');
   ck('ArcGIS', 'Maps', function() { return html.includes('arcgis.com') || html.includes('js.arcgis.com'); }, 'ArcGIS');
 
-  // ========== BACKEND FRAMEWORKS (15) ==========
-  ck('Laravel', 'Backend', function() { return html.includes('laravel') || (html.includes('csrf-token') && html.includes('_token')); }, 'Laravel signatures');
-  ck('Django', 'Backend', function() { return html.includes('csrfmiddlewaretoken') || html.includes('__admin_media_prefix__'); }, 'Django signatures');
-  ck('Ruby on Rails', 'Backend', function() { return html.includes('csrf-param') && html.includes('authenticity_token'); }, 'Rails signatures');
-  ck('ASP.NET', 'Backend', function() { return html.includes('__VIEWSTATE') || html.includes('__EVENTTARGET') || html.includes('.aspx'); }, 'ASP.NET signatures');
-  ck('Spring', 'Backend', function() { return html.includes('spring') && html.includes('_csrf'); }, 'Spring signatures');
-  ck('Express.js', 'Backend', function() { return html.includes('X-Powered-By') && html.includes('Express'); }, 'Express.js');
-  ck('PHP', 'Backend', function() { return html.includes('.php') && !html.includes('wordpress') && !html.includes('wp-content'); }, 'PHP pages');
-  ck('ColdFusion', 'Backend', function() { return html.includes('.cfm') || html.includes('cftoken'); }, 'ColdFusion');
-  ck('Perl', 'Backend', function() { return html.includes('.pl') || html.includes('.cgi'); }, 'Perl/CGI');
+  // ========== BACKEND FRAMEWORKS (strict patterns to avoid false positives) ==========
+  ck('Laravel', 'Backend', function() { return (html.includes('csrf-token') && html.includes('_token') && html.includes('laravel')); }, 'Laravel signatures');
+  ck('Django', 'Backend', function() { return html.includes('csrfmiddlewaretoken'); }, 'Django CSRF token');
+  ck('Ruby on Rails', 'Backend', function() { return html.includes('csrf-param') && html.includes('authenticity_token'); }, 'Rails CSRF tokens');
+  ck('ASP.NET', 'Backend', function() { return html.includes('__VIEWSTATE') || html.includes('__EVENTTARGET'); }, 'ASP.NET ViewState');
+  ck('PHP', 'Backend', function() { var phpLinks = allLinks.filter(function(a) { return a.href.match(/\.php(\?|$|#)/); }); return phpLinks.length >= 2 && !html.includes('wp-content'); }, 'Multiple .php pages');
 
   // ========== SEARCH VERIFICATION (5) ==========
   ck('Google Search Console', 'Verification', function() { return !!doc.querySelector('meta[name="google-site-verification"]'); }, 'Google verification');
@@ -420,27 +416,246 @@ export function injectableScanner() {
   var companyName = ogSiteName || (title ? title.split(/\s*[-|]\s*/)[0].trim() : domain.split('.')[0]);
   companyName = companyName.charAt(0).toUpperCase() + companyName.slice(1);
 
-  var links = Array.from(doc.querySelectorAll('a')).map(function(a) { return a.href.toLowerCase(); });
+  var allLinks = Array.from(doc.querySelectorAll('a'));
+  var links = allLinks.map(function(a) { return a.href.toLowerCase(); });
+
+  // ========== SOCIAL LINKS EXTRACTION ==========
+  var socialLinks = { linkedin: '', twitter: '', facebook: '', instagram: '', youtube: '', github: '', tiktok: '' };
+  allLinks.forEach(function(a) {
+    var h = a.href.toLowerCase();
+    if (h.includes('linkedin.com/company') || h.includes('linkedin.com/in/')) socialLinks.linkedin = a.href;
+    if ((h.includes('twitter.com/') || h.includes('x.com/')) && !h.includes('intent/tweet')) socialLinks.twitter = a.href;
+    if (h.includes('facebook.com/') && !h.includes('sharer')) socialLinks.facebook = a.href;
+    if (h.includes('instagram.com/')) socialLinks.instagram = a.href;
+    if (h.includes('youtube.com/') || h.includes('youtu.be/')) socialLinks.youtube = a.href;
+    if (h.includes('github.com/') && !h.includes('github.com/topics')) socialLinks.github = a.href;
+    if (h.includes('tiktok.com/')) socialLinks.tiktok = a.href;
+  });
+
+  // ========== CONTACT INFO EXTRACTION ==========
+  // Extract standard emails
+  var emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+  var allEmails = (bodyText.match(emailRegex) || []);
+
+  // Also extract obfuscated emails: [at] [dot] (at) (dot) {at} {dot} -at- -dot- _at_ _dot_
+  var obfuscatedText = bodyText
+    .replace(/\s*\[at\]\s*/gi, '@')
+    .replace(/\s*\(at\)\s*/gi, '@')
+    .replace(/\s*\{at\}\s*/gi, '@')
+    .replace(/\s*-at-\s*/gi, '@')
+    .replace(/\s*_at_\s*/gi, '@')
+    .replace(/\s*\bat\b\s*/gi, '@')
+    .replace(/\s*\[dot\]\s*/gi, '.')
+    .replace(/\s*\(dot\)\s*/gi, '.')
+    .replace(/\s*\{dot\}\s*/gi, '.')
+    .replace(/\s*-dot-\s*/gi, '.')
+    .replace(/\s*_dot_\s*/gi, '.');
+  var obfuscatedEmails = (obfuscatedText.match(emailRegex) || []);
+
+  // Also check HTML for mailto: links
+  var mailtoLinks = Array.from(doc.querySelectorAll('a[href^="mailto:"]'));
+  var mailtoEmails = mailtoLinks.map(function(a) {
+    return a.getAttribute('href').replace('mailto:', '').split('?')[0].trim().toLowerCase();
+  }).filter(function(e) { return e.includes('@'); });
+
+  // Combine all sources
+  var combinedEmails = allEmails.concat(obfuscatedEmails).concat(mailtoEmails);
+
+  // Filter to likely company/contact emails
+  var companyEmails = combinedEmails.filter(function(e) {
+    var lower = e.toLowerCase();
+    return (lower.includes('info@') || lower.includes('contact@') || lower.includes('hello@') ||
+            lower.includes('support@') || lower.includes('sales@') || lower.includes('hi@') ||
+            lower.includes('team@') || lower.includes('admin@') || lower.includes('enquir') ||
+            lower.includes('business@') || lower.includes('partners@') || lower.includes('press@') ||
+            lower.includes('hr@') || lower.includes('careers@') || lower.includes('office@') ||
+            lower.includes('mail@') || lower.includes('general@') || lower.includes('help@') ||
+            lower.includes('feedback@') || lower.includes('marketing@') ||
+            lower.endsWith('@' + domain) ||
+            lower.endsWith('@nic.in') || lower.endsWith('@gov.in') || lower.endsWith('@gov.'));
+  });
+
+  // If no company emails found, include ALL found emails (they're on the page publicly)
+  if (companyEmails.length === 0 && combinedEmails.length > 0) {
+    companyEmails = combinedEmails;
+  }
+
+  // Deduplicate
+  companyEmails = companyEmails.filter(function(e, i) { return companyEmails.indexOf(e) === i; }).slice(0, 10);
+
+  // Extract phone numbers
+  var phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g;
+  var rawPhones = (bodyText.match(phoneRegex) || []);
+  var phones = rawPhones.filter(function(p) {
+    var digits = p.replace(/\D/g, '');
+    return digits.length >= 7 && digits.length <= 15;
+  }).filter(function(p, i, arr) { return arr.indexOf(p) === i; }).slice(0, 3);
+
+  // Extract address/location
+  var locationEl = doc.querySelector('[class*="address"],[class*="location"],[itemtype*="PostalAddress"]');
+  var location = locationEl ? (locationEl.textContent || '').trim().replace(/\s+/g, ' ').substring(0, 200) : '';
+  // Fallback: check JSON-LD for address
+  if (!location) {
+    var jsonLdEls = doc.querySelectorAll('script[type="application/ld+json"]');
+    for (var jl = 0; jl < jsonLdEls.length; jl++) {
+      try {
+        var ld = JSON.parse(jsonLdEls[jl].textContent || '');
+        if (ld.address) {
+          var addr = ld.address;
+          location = [addr.streetAddress, addr.addressLocality, addr.addressRegion, addr.addressCountry, addr.postalCode].filter(Boolean).join(', ');
+        }
+      } catch(e) {}
+    }
+  }
+
+  // ========== RECENT BLOG POSTS ==========
+  var recentPosts = [];
+  // Try to find blog post links with dates
+  var articleEls = doc.querySelectorAll('article, [class*="blog-post"], [class*="post-item"], [class*="blog-card"], [class*="article-card"]');
+  for (var ap = 0; ap < Math.min(articleEls.length, 3); ap++) {
+    var artTitle = articleEls[ap].querySelector('h2, h3, h4');
+    var artLink = articleEls[ap].querySelector('a');
+    var artDate = articleEls[ap].querySelector('time, [class*="date"], [class*="published"]');
+    if (artTitle) {
+      recentPosts.push({
+        title: (artTitle.textContent || '').trim().substring(0, 100),
+        url: artLink ? artLink.href : '',
+        date: artDate ? (artDate.getAttribute('datetime') || artDate.textContent || '').trim().substring(0, 30) : '',
+      });
+    }
+  }
+
+  // ========== CUSTOMER LOGOS / SOCIAL PROOF ==========
+  var customerLogos = [];
+  var logoSections = doc.querySelectorAll('[class*="logo"],[class*="client"],[class*="partner"],[class*="trusted"],[class*="brand"],[class*="customer-logo"]');
+  logoSections.forEach(function(section) {
+    var imgs = section.querySelectorAll('img');
+    imgs.forEach(function(img) {
+      var alt = (img.getAttribute('alt') || '').trim();
+      if (alt && alt.length > 1 && alt.length < 60 && customerLogos.length < 10) {
+        customerLogos.push(alt);
+      }
+    });
+  });
+  // Deduplicate
+  customerLogos = customerLogos.filter(function(l, i) { return customerLogos.indexOf(l) === i; });
+
+  // ========== TESTIMONIALS ==========
+  var testimonials = [];
+  var testimonialEls = doc.querySelectorAll('[class*="testimonial"],[class*="review"],[class*="quote"],[class*="feedback"]');
+  for (var ti = 0; ti < Math.min(testimonialEls.length, 3); ti++) {
+    var tText = (testimonialEls[ti].textContent || '').trim().substring(0, 200);
+    if (tText.length > 20) {
+      testimonials.push(tText.replace(/\s+/g, ' '));
+    }
+  }
+
+  // ========== TEAM / LEADERSHIP (public page only) ==========
+  var teamMembers = [];
+  var teamSections = doc.querySelectorAll('[class*="team"],[class*="leadership"],[class*="founder"],[class*="about-us"],[class*="our-team"]');
+  teamSections.forEach(function(section) {
+    var memberEls = section.querySelectorAll('[class*="member"],[class*="person"],[class*="leader"],[class*="card"]');
+    memberEls.forEach(function(el) {
+      if (teamMembers.length >= 10) return;
+      var nameEl = el.querySelector('h3, h4, h5, [class*="name"]');
+      var roleEl = el.querySelector('p, span, [class*="title"], [class*="role"], [class*="position"]');
+      var linkedinEl = el.querySelector('a[href*="linkedin"]');
+      if (nameEl) {
+        var memberName = (nameEl.textContent || '').trim();
+        var memberRole = roleEl ? (roleEl.textContent || '').trim().substring(0, 80) : '';
+        var memberLinkedin = linkedinEl ? linkedinEl.href : '';
+        if (memberName.length > 2 && memberName.length < 60) {
+          teamMembers.push({ name: memberName, role: memberRole, linkedin: memberLinkedin });
+        }
+      }
+    });
+  });
+
+  // ========== SCHEDULING LINKS ==========
+  var schedulingLink = '';
+  allLinks.forEach(function(a) {
+    var h = a.href.toLowerCase();
+    if (h.includes('calendly.com/') || h.includes('cal.com/') || h.includes('acuityscheduling.com/') ||
+        h.includes('chilipiper.com/') || h.includes('hubspot.com/meetings/') || h.includes('savvycal.com/')) {
+      if (!schedulingLink) schedulingLink = a.href;
+    }
+  });
+
+  // ========== COPYRIGHT YEAR ==========
+  var copyrightMatch = bodyText.match(/©\s*(\d{4})/);
+  var copyrightYear = copyrightMatch ? copyrightMatch[1] : '';
 
   var company = {
     name: companyName, domain: domain,
     tagline: ogTitle || '',
     description: metaDesc || ogDesc || '',
     industry: 'Unknown',
-    type: (html.includes('shopify') || html.includes('add to cart') || html.includes('woocommerce')) ? 'ecommerce' :
-          (bodyText.includes('agency') || bodyText.includes('our clients') || bodyText.includes('our work') || bodyText.includes('portfolio')) ? 'agency' :
-          (bodyText.includes('saas') || bodyText.includes('free trial') || bodyText.includes('subscription') || bodyText.includes('per month')) ? 'saas' :
-          (bodyText.includes('consulting') || bodyText.includes('professional services')) ? 'services' : 'unknown',
+    type: (function() {
+      // Helper: count keyword hits (more hits = higher confidence)
+      function score(keywords) {
+        var count = 0;
+        for (var ki = 0; ki < keywords.length; ki++) {
+          if (bodyText.includes(keywords[ki])) count++;
+        }
+        return count;
+      }
+
+      // Check domain-based signals first (most reliable)
+      if (domain.endsWith('.gov') || domain.endsWith('.gov.in') || domain.endsWith('.nic.in') || domain.endsWith('.gov.uk') || domain.endsWith('.gov.au')) return 'government';
+      if (domain.endsWith('.edu') || domain.endsWith('.ac.in') || domain.endsWith('.ac.uk')) return 'education';
+      if (domain.endsWith('.org') && (bodyText.includes('donate') || bodyText.includes('nonprofit') || bodyText.includes('charity'))) return 'nonprofit';
+
+      // Check for specific ecommerce platforms (most reliable)
+      var hasEcomPlatform = html.includes('Shopify.theme') || html.includes('myshopify.com') || !!doc.querySelector('meta[name="shopify-checkout-api-token"]') || html.includes('woocommerce') || html.includes('cdn.bigcommerce') || html.includes('Magento_');
+      if (hasEcomPlatform) return 'ecommerce';
+
+      // Score-based classification (need 2+ keyword hits to classify)
+      var scores = {
+        hospitality: score(['hotel', 'resort', 'check-in', 'book a room', 'accommodation', 'suites', 'rooms available', 'guest']),
+        restaurant: score(['restaurant', 'menu', 'dine', 'cuisine', 'reservation', 'chef', 'food ordering']),
+        education: score(['university', 'academic', 'semester', 'faculty', 'campus', 'students', 'admission', 'enroll']),
+        government: score(['government', 'ministry', 'citizen', 'public service', 'department of', 'official website']),
+        healthcare: score(['hospital', 'patient', 'doctor', 'appointment', 'medical', 'health care', 'clinical', 'treatment']),
+        nonprofit: score(['donate', 'non-profit', 'nonprofit', 'volunteer', 'mission', 'charity', 'foundation']),
+        realestate: score(['real estate', 'property for', 'sqft', 'bedroom', 'apartment', 'listing', 'for sale', 'for rent']),
+        agency: score(['agency', 'our clients', 'our work', 'case study', 'portfolio', 'we help companies', 'our services']),
+        saas: score(['free trial', 'sign up free', 'start free', 'pricing', 'per month', 'saas', 'platform', 'api']),
+        services: score(['consulting', 'professional services', 'our expertise', 'solutions', 'implementation']),
+        ecommerce: score(['add to cart', 'shop now', 'buy now', 'checkout', 'shopping cart', 'your order']),
+      };
+
+      // Find the category with highest score (minimum 2 to classify)
+      var bestType = 'unknown';
+      var bestScore = 1; // minimum threshold of 2
+      for (var t in scores) {
+        if (scores[t] > bestScore) {
+          bestScore = scores[t];
+          bestType = t;
+        }
+      }
+      return bestType;
+    })(),
     hasCareerPage: links.some(function(l) { return l.includes('/careers') || l.includes('/jobs') || l.includes('greenhouse.io') || l.includes('lever.co') || l.includes('ashbyhq.com') || l.includes('workable.com'); }),
     hasBlog: links.some(function(l) { return l.includes('/blog') || l.includes('/articles') || l.includes('/news') || l.includes('/resources'); }),
     hasPricingPage: links.some(function(l) { return l.includes('/pricing') || l.includes('/plans'); }),
     hasFreeTrial: bodyText.includes('free trial') || bodyText.includes('start free') || bodyText.includes('try free'),
     hasDemoPage: bodyText.includes('book a demo') || bodyText.includes('request demo') || bodyText.includes('schedule demo') || bodyText.includes('get a demo'),
     hasCaseStudies: links.some(function(l) { return l.includes('/case-stud') || l.includes('/customers') || l.includes('/success-stories'); }),
-    hasApiDocs: links.some(function(l) { return l.includes('/docs') || l.includes('/api') || l.includes('/developers'); }),
+    hasApiDocs: links.some(function(l) { return l.includes('/docs') || l.includes('/api-reference') || l.includes('/api-docs') || l.includes('/developers') || l.includes('/developer'); }) && (bodyText.includes('api') && (bodyText.includes('documentation') || bodyText.includes('endpoint') || bodyText.includes('sdk'))),
     hasIntegrationsPage: links.some(function(l) { return l.includes('/integrations') || l.includes('/marketplace') || l.includes('/apps'); }),
     estimatedSize: links.some(function(l) { return l.includes('greenhouse.io') || l.includes('lever.co') || l.includes('ashbyhq.com'); }) ? '51-200' :
                    links.some(function(l) { return l.includes('/careers') || l.includes('/jobs'); }) ? '11-50' : '1-10',
+    // New enrichment fields
+    socialLinks: socialLinks,
+    emails: companyEmails,
+    phones: phones,
+    location: location,
+    recentPosts: recentPosts,
+    customerLogos: customerLogos,
+    testimonials: testimonials,
+    teamMembers: teamMembers,
+    schedulingLink: schedulingLink,
+    copyrightYear: copyrightYear,
   };
 
   return { url: url, domain: domain, timestamp: Date.now(), detections: detections, company: company, isCompanyWebsite: true };

@@ -149,10 +149,14 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
-  // --- Signals that fire on common/minimal patterns ---
+  // --- Context-aware signals (only fire when relevant to company type + stack) ---
 
-  // Small team signal
-  if (company.estimatedSize === '1-10' || company.estimatedSize === '11-50') {
+  const isB2B = company.type === 'saas' || company.type === 'agency' || company.type === 'services';
+  const isNonCommercial = company.type === 'government' || company.type === 'education' || company.type === 'nonprofit';
+  const isLocalBusiness = company.type === 'hospitality' || company.type === 'restaurant' || company.type === 'healthcare' || company.type === 'realestate';
+
+  // Small team signal (only for B2B companies where it's an actionable insight)
+  if ((company.estimatedSize === '1-10' || company.estimatedSize === '11-50') && isB2B) {
     signals.push({
       id: 'small-team', type: 'commercial', title: 'Small/growing team',
       description: `Estimated ${company.estimatedSize} employees. Likely wearing multiple hats and open to efficiency tools.`,
@@ -169,8 +173,8 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
-  // No demo or free trial (SaaS/services only)
-  if (!company.hasDemoPage && !company.hasFreeTrial && company.type !== 'ecommerce') {
+  // No demo or free trial (SaaS/services ONLY - not government, media, etc.)
+  if (!company.hasDemoPage && !company.hasFreeTrial && (company.type === 'saas' || company.type === 'services')) {
     signals.push({
       id: 'no-demo-or-trial', type: 'commercial', title: 'No demo or trial offering visible',
       description: 'No demo booking or free trial detected. May be missing inbound conversion opportunities.',
@@ -178,8 +182,8 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
-  // No case studies
-  if (!company.hasCaseStudies && company.type !== 'ecommerce') {
+  // No case studies (B2B only)
+  if (!company.hasCaseStudies && isB2B) {
     signals.push({
       id: 'no-case-studies-commercial', type: 'commercial', title: 'No visible social proof',
       description: 'No case studies or customer stories found. Trust-building content may be missing.',
@@ -187,9 +191,9 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
-  // Minimal tech stack (< 3 detections beyond SEO)
+  // Minimal tech stack (only when company SHOULD have more tools - B2B/ecommerce)
   const nonSeoDetections = detections.filter(d => d.category !== 'SEO');
-  if (nonSeoDetections.length <= 2) {
+  if (nonSeoDetections.length <= 2 && (isB2B || company.type === 'ecommerce')) {
     signals.push({
       id: 'minimal-stack', type: 'commercial', title: 'Minimal tech stack',
       description: `Only ${nonSeoDetections.length} tools detected. Site may be underinvesting in digital infrastructure.`,
@@ -197,8 +201,8 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
-  // No marketing automation
-  if (marketingTools.length === 0) {
+  // No marketing automation (B2B/ecommerce only)
+  if (marketingTools.length === 0 && (isB2B || company.type === 'ecommerce')) {
     signals.push({
       id: 'no-marketing-automation', type: 'commercial', title: 'No marketing automation detected',
       description: 'No email marketing or automation tools found. Lead nurturing may be manual.',
@@ -206,8 +210,8 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
-  // Basic/template site builder
-  if (detected.has('wix') || detected.has('squarespace')) {
+  // Template site builder (only for B2B/agency where it matters)
+  if ((detected.has('wix') || detected.has('squarespace')) && isB2B) {
     signals.push({
       id: 'template-builder', type: 'commercial', title: 'Template site builder in use',
       description: `Site built on ${detected.has('wix') ? 'Wix' : 'Squarespace'}. May be outgrowing the platform as business scales.`,
@@ -215,7 +219,7 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
-  // Has structured data = SEO-aware
+  // SEO-aware (relevant for any company investing in organic)
   if (detections.some(d => d.name.includes('Structured data'))) {
     signals.push({
       id: 'seo-aware', type: 'commercial', title: 'SEO-aware setup',
@@ -224,12 +228,127 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
-  // AI opportunity - always fires (every company can benefit from AI)
-  signals.push({
-    id: 'ai-opportunity', type: 'commercial', title: 'AI integration opportunity',
-    description: 'Every business can benefit from AI-powered automation, content generation, customer support, or data analysis.',
-    confidence: 'strong', sourceDetections: [],
-  });
+  // --- TECH-STACK-SPECIFIC signals ---
+
+  // WordPress without security plugin
+  if (detected.has('wordpress') && !detected.has('wordfence')) {
+    signals.push({
+      id: 'wp-security-gap', type: 'commercial', title: 'WordPress without visible security plugin',
+      description: 'WordPress detected but no security plugin (Wordfence, Sucuri) found. Potential vulnerability.',
+      confidence: 'inferred', sourceDetections: ['WordPress'],
+    });
+  }
+
+  // WordPress with many plugins (jQuery UI, multiple form plugins, etc.)
+  if (detected.has('wordpress') && detections.filter(d => d.name.includes('Forms') || d.name.includes('WPForms') || d.name.includes('Gravity') || d.name.includes('Ninja')).length >= 1) {
+    signals.push({
+      id: 'wp-plugin-stack', type: 'commercial', title: 'WordPress with plugin stack',
+      description: 'WordPress site with form plugins detected. Performance and maintenance may need attention.',
+      confidence: 'inferred', sourceDetections: ['WordPress'],
+    });
+  }
+
+  // React/Next.js without analytics = developer-built, may lack marketing
+  if ((detected.has('react') || detected.has('next.js')) && analyticsTools.length === 0) {
+    signals.push({
+      id: 'modern-stack-no-analytics', type: 'commercial', title: 'Modern dev stack without analytics',
+      description: 'React/Next.js site without analytics. Likely developer-led build that may lack marketing infrastructure.',
+      confidence: 'strong', sourceDetections: ['React', 'Next.js'],
+    });
+  }
+
+  // Multiple analytics tools = data may be fragmented
+  if (analyticsTools.length >= 2) {
+    signals.push({
+      id: 'multi-analytics', type: 'commercial', title: 'Multiple analytics tools',
+      description: `${analyticsTools.length} analytics tools detected (${analyticsTools.map(d => d.name).join(', ')}). Data may be fragmented across platforms.`,
+      confidence: 'strong', sourceDetections: analyticsTools.map(d => d.name),
+    });
+  }
+
+  // Has ad pixels but no CRM = spending on ads without proper lead tracking
+  const adPixels = detections.filter(d => d.category === 'Ad Pixel');
+  const hasCRM = ['hubspot', 'marketo', 'pardot', 'activecampaign', 'salesforce'].some(t => detected.has(t));
+  if (adPixels.length >= 1 && !hasCRM && isB2B) {
+    signals.push({
+      id: 'ads-no-crm', type: 'commercial', title: 'Running ads without visible CRM',
+      description: `${adPixels.length} ad pixel(s) detected (${adPixels.map(d => d.name).join(', ')}) but no CRM. Leads from ads may not be tracked properly.`,
+      confidence: 'strong', sourceDetections: adPixels.map(d => d.name),
+    });
+  }
+
+  // Has chat widget but no CRM = conversations not being tracked
+  if (hasChat && !hasCRM && isB2B) {
+    signals.push({
+      id: 'chat-no-crm', type: 'commercial', title: 'Chat widget without CRM',
+      description: 'Live chat detected but no CRM. Chat conversations and leads may not be tracked or followed up.',
+      confidence: 'inferred', sourceDetections: detections.filter(d => d.category === 'Sales / Support' || d.category === 'Chat / Support').map(d => d.name),
+    });
+  }
+
+  // Ecommerce without reviews/ratings
+  if (company.type === 'ecommerce' && !detections.some(d => d.name.includes('Yotpo') || d.name.includes('Judge.me') || d.name.includes('Stamped') || d.name.includes('Trustpilot'))) {
+    signals.push({
+      id: 'ecom-no-reviews', type: 'commercial', title: 'Ecommerce without review system',
+      description: 'No product review tool detected. Social proof from reviews significantly impacts conversion rates.',
+      confidence: 'strong', sourceDetections: [],
+    });
+  }
+
+  // Has reCAPTCHA/security = getting form spam (may need better lead qualification)
+  if (detections.some(d => d.name.includes('reCAPTCHA') || d.name.includes('hCaptcha'))) {
+    signals.push({
+      id: 'captcha-present', type: 'commercial', title: 'Anti-spam measures active',
+      description: 'CAPTCHA detected on forms. Company is getting enough traffic/submissions to need spam protection.',
+      confidence: 'strong', sourceDetections: [],
+    });
+  }
+
+  // Local business specific signals
+  if (isLocalBusiness) {
+    if (!hasChat && !hasForms) {
+      signals.push({
+        id: 'local-no-booking', type: 'commercial', title: 'No online booking/inquiry form',
+        description: 'No visible booking form or inquiry path. Visitors may call instead of converting online.',
+        confidence: 'strong', sourceDetections: [],
+      });
+    }
+    if (marketingTools.length === 0) {
+      signals.push({
+        id: 'local-no-email-marketing', type: 'commercial', title: 'No email marketing for repeat customers',
+        description: 'No email marketing tool detected. Missing opportunity to drive repeat visits via email campaigns.',
+        confidence: 'inferred', sourceDetections: [],
+      });
+    }
+    if (!detections.some(d => d.name.includes('Google Maps') || d.name.includes('Mapbox'))) {
+      signals.push({
+        id: 'local-no-map', type: 'commercial', title: 'No embedded map detected',
+        description: 'No Google Maps or map embed found. Visitors may struggle to find the location.',
+        confidence: 'inferred', sourceDetections: [],
+      });
+    }
+    if (analyticsTools.length === 0) {
+      signals.push({
+        id: 'local-no-analytics', type: 'commercial', title: 'No website analytics',
+        description: 'No analytics detected. Cannot measure which marketing channels drive bookings.',
+        confidence: 'strong', sourceDetections: [],
+      });
+    }
+    signals.push({
+      id: 'local-online-presence', type: 'commercial', title: 'Local business online presence',
+      description: 'Local business that could benefit from better online visibility, review management, and digital marketing.',
+      confidence: 'inferred', sourceDetections: [],
+    });
+  }
+
+  // AI opportunity - ONLY for B2B/ecommerce/local business, NOT government/education/nonprofit
+  if ((isB2B || company.type === 'ecommerce' || isLocalBusiness) && !isNonCommercial) {
+    signals.push({
+      id: 'ai-opportunity', type: 'commercial', title: 'AI integration opportunity',
+      description: 'Business type suggests potential for AI-powered automation in workflows, customer engagement, or data analysis.',
+      confidence: 'inferred', sourceDetections: [],
+    });
+  }
 
   return signals;
 }

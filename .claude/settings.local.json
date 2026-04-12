@@ -36,7 +36,12 @@
       "Bash(npx vite:*)",
       "WebFetch(domain:hashengage.com)",
       "WebFetch(domain:www.ocac.in)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:www.thepresidencyindia.com)",
+      "Bash(grep -oP \"hasEcomPlatform.{0,200}\" \"C:/DIVERGEIX-2026-27/chrome webstore publish/Pitchbox/extension/dist/assets/sidepanel-D4qIMN1F.js\")",
+      "Bash(grep -o \"hasEcomPlatform.\\\\{0,300\\\\}\" \"C:/DIVERGEIX-2026-27/chrome webstore publish/Pitchbox/extension/dist/assets/sidepanel-D4qIMN1F.js\")",
+      "Bash(grep -o \"ecommerce\\\\|hospitality\\\\|hotel.\\\\{0,20\\\\}\" \"C:/DIVERGEIX-2026-27/chrome webstore publish/Pitchbox/extension/dist/assets/sidepanel-D4qIMN1F.js\")",
+      "Bash(node test-scanner.js)"
     ]
   }
 }

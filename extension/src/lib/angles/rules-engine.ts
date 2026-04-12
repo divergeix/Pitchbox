@@ -361,62 +361,164 @@ const rules: AngleRule[] = [
     },
   },
 
-  // AI angles - always available
+  // --- Local business angles ---
+  {
+    id: 'local-online-visibility',
+    title: 'Local business online visibility',
+    category: 'marketing',
+    description: 'Local business that could improve online presence through Google Business, local SEO, and review management.',
+    suggestedOpener: "How are customers finding you online right now? Local SEO and review management can significantly increase walk-ins and bookings.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'local-online-presence');
+      return { match, confidence: 72, sources: ['local-online-presence'] };
+    },
+  },
+  {
+    id: 'local-email-repeat',
+    title: 'Email marketing for repeat customers',
+    category: 'marketing',
+    description: 'No email marketing detected. Repeat customers are the most profitable segment for local businesses.',
+    suggestedOpener: "Are you staying in touch with past customers? A simple email campaign can drive repeat visits and referrals.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'local-no-email-marketing');
+      return { match, confidence: 70, sources: ['local-no-email-marketing'] };
+    },
+  },
+  {
+    id: 'local-booking-online',
+    title: 'Online booking and inquiry optimization',
+    category: 'design-cro',
+    description: 'No clear online booking or inquiry form. Converting website visitors into customers requires a frictionless path.',
+    suggestedOpener: "Visited your site but couldn't easily book or inquire online. Are most customers calling in instead?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'local-no-booking');
+      return { match, confidence: 76, sources: ['local-no-booking'] };
+    },
+  },
+  {
+    id: 'local-map-directions',
+    title: 'Location and directions visibility',
+    category: 'design-cro',
+    description: 'No embedded map found. Making it easy for customers to find you can increase visits.',
+    suggestedOpener: "I didn't see a map on your site. Making directions easy to find can reduce no-shows and increase footfall.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'local-no-map');
+      return { match, confidence: 62, sources: ['local-no-map'] };
+    },
+  },
+
+  // --- AI angles (only for B2B companies, tied to specific tech gaps) ---
   {
     id: 'ai-automation',
     title: 'AI-powered workflow automation',
     category: 'operations',
-    description: 'AI can automate repetitive tasks like data entry, email responses, report generation, and customer routing. Reduces manual work by 40-60%.',
-    suggestedOpener: "Quick question — how much time does your team spend on repetitive tasks like data entry or reporting? AI can cut that in half.",
+    description: 'AI can automate repetitive tasks. Particularly relevant given their current tech stack and team size.',
+    suggestedOpener: "Quick question — how much time does your team spend on repetitive tasks? AI can cut that significantly.",
     condition: (signals, _d, company) => {
-      const match = signals.some(s => s.id === 'ai-opportunity');
-      return { match, confidence: 78, sources: ['ai-opportunity'] };
+      const match = signals.some(s => s.id === 'ai-opportunity') && signals.some(s => s.id === 'small-team');
+      return { match, confidence: 76, sources: ['ai-opportunity', 'small-team'] };
     },
   },
   {
-    id: 'ai-customer-experience',
-    title: 'AI-enhanced customer experience',
-    category: 'growth',
-    description: 'AI chatbots, personalized recommendations, and intelligent support can transform customer interactions. Reduces response time and increases satisfaction.',
-    suggestedOpener: "Are your customers getting instant answers when they need them? AI-powered support can handle 70% of queries without human intervention.",
-    condition: (signals, detections) => {
-      const noChat = !detections.some(d => d.category === 'Sales / Support');
+    id: 'ai-customer-support',
+    title: 'AI-enhanced customer support',
+    category: 'support',
+    description: 'No chat/support widget detected. AI chatbot could handle first-line customer queries automatically.',
+    suggestedOpener: "I didn't spot a chat widget on your site. An AI chatbot could handle common questions 24/7 without adding headcount.",
+    condition: (signals, detections, company) => {
+      const noChat = !detections.some(d => d.category === 'Chat / Support' || d.category === 'Sales / Support');
       const match = signals.some(s => s.id === 'ai-opportunity') && noChat;
-      return { match, confidence: 75, sources: ['ai-opportunity'] };
-    },
-  },
-  {
-    id: 'ai-content-marketing',
-    title: 'AI-powered content and marketing',
-    category: 'marketing',
-    description: 'AI can scale content production, personalize email campaigns, optimize ad copy, and generate social media content. 10x output without 10x headcount.',
-    suggestedOpener: "Content is king but creating it is expensive. AI can help you produce 10x more high-quality content without hiring a bigger team.",
-    condition: (signals, _d, company) => {
-      const match = signals.some(s => s.id === 'ai-opportunity') && (company.hasBlog || company.type === 'agency');
-      return { match, confidence: 76, sources: ['ai-opportunity', 'content-motion'] };
-    },
-  },
-  {
-    id: 'ai-sales-intelligence',
-    title: 'AI-driven sales intelligence',
-    category: 'revops',
-    description: 'AI can qualify leads automatically, predict deal outcomes, draft personalized outreach, and surface buying signals from prospect behavior.',
-    suggestedOpener: "How are you prioritizing which leads to call first? AI can score and rank your pipeline so your team focuses on the highest-value prospects.",
-    condition: (signals, _d, company) => {
-      const match = signals.some(s => s.id === 'ai-opportunity') && (company.type === 'saas' || company.type === 'services');
       return { match, confidence: 74, sources: ['ai-opportunity'] };
     },
   },
   {
-    id: 'ai-data-analytics',
-    title: 'AI-powered analytics and insights',
+    id: 'ai-content-scale',
+    title: 'AI-powered content scaling',
+    category: 'marketing',
+    description: 'Active blog detected. AI can help scale content production and distribution without more writers.',
+    suggestedOpener: "Your blog is active. AI can help you produce more high-quality content and repurpose it across channels.",
+    condition: (signals, _d, company) => {
+      const match = signals.some(s => s.id === 'ai-opportunity') && company.hasBlog;
+      return { match, confidence: 72, sources: ['ai-opportunity', 'content-motion'] };
+    },
+  },
+  {
+    id: 'ai-lead-scoring',
+    title: 'AI-driven lead scoring and routing',
+    category: 'revops',
+    description: 'Running ads or getting form submissions but no CRM detected. AI can qualify and route leads automatically.',
+    suggestedOpener: "You're generating leads but I didn't see a CRM. AI can score, qualify, and route leads so your team only talks to the best ones.",
+    condition: (signals, detections, company) => {
+      const match = signals.some(s => s.id === 'ads-no-crm' || s.id === 'chat-no-crm');
+      return { match, confidence: 78, sources: ['ads-no-crm', 'chat-no-crm'] };
+    },
+  },
+
+  // --- NEW tech-stack-specific angles ---
+  {
+    id: 'wp-security',
+    title: 'WordPress security hardening',
+    category: 'engineering',
+    description: 'WordPress site without visible security plugin. Vulnerable to common attacks.',
+    suggestedOpener: "Your WordPress site doesn't seem to have a security plugin. WordPress sites get targeted constantly - worth a quick audit.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'wp-security-gap');
+      return { match, confidence: 80, sources: ['wp-security-gap'] };
+    },
+  },
+  {
+    id: 'wp-performance',
+    title: 'WordPress performance optimization',
+    category: 'engineering',
+    description: 'WordPress with multiple plugins. Site speed and performance may be affected.',
+    suggestedOpener: "Noticed your WordPress site has a few plugins stacked up. That can slow things down and hurt conversions.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'wp-plugin-stack');
+      return { match, confidence: 72, sources: ['wp-plugin-stack'] };
+    },
+  },
+  {
+    id: 'modern-stack-marketing-gap',
+    title: 'Developer-built site needs marketing layer',
+    category: 'marketing',
+    description: 'Modern tech stack (React/Next.js) but no analytics or marketing tools. Developer-led build that needs marketing infrastructure.',
+    suggestedOpener: "Your site is built on a modern stack but I didn't see analytics or marketing tools. Are you tracking what's working?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'modern-stack-no-analytics');
+      return { match, confidence: 82, sources: ['modern-stack-no-analytics'] };
+    },
+  },
+  {
+    id: 'analytics-consolidation',
+    title: 'Analytics stack consolidation',
     category: 'operations',
-    description: 'AI can turn raw data into actionable insights, build dashboards that explain themselves, and predict trends before they happen.',
-    suggestedOpener: "Are you making decisions based on data or gut feel? AI analytics can surface patterns your team would never spot manually.",
-    condition: (signals, detections) => {
-      const hasAnalytics = detections.some(d => d.category === 'Analytics');
-      const match = signals.some(s => s.id === 'ai-opportunity') && hasAnalytics;
-      return { match, confidence: 70, sources: ['ai-opportunity'] };
+    description: 'Multiple analytics tools detected. Data may be inconsistent across platforms.',
+    suggestedOpener: "I see multiple analytics tools on your site. Are you getting a single source of truth or fighting fragmented data?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'multi-analytics');
+      return { match, confidence: 74, sources: ['multi-analytics'] };
+    },
+  },
+  {
+    id: 'ads-crm-gap',
+    title: 'Ad spend without lead tracking',
+    category: 'revops',
+    description: 'Running paid ads but no CRM detected. Ad spend may be wasted without proper lead tracking.',
+    suggestedOpener: "You're running paid ads but I didn't see a CRM. How are you tracking which ads actually generate revenue?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'ads-no-crm');
+      return { match, confidence: 82, sources: ['ads-no-crm'] };
+    },
+  },
+  {
+    id: 'ecom-reviews',
+    title: 'Product reviews and ratings',
+    category: 'ecommerce',
+    description: 'Ecommerce site without review system. Product reviews directly impact conversion rates.',
+    suggestedOpener: "Your store doesn't seem to have product reviews enabled. Reviews can boost conversion rates significantly.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'ecom-no-reviews');
+      return { match, confidence: 80, sources: ['ecom-no-reviews'] };
     },
   },
 ];

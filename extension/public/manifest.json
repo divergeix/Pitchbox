@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PitchBox - Website Intelligence to Cold Outreach",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Analyze any company website for tech stack, buying signals, and growth indicators. Generate personalized cold outreach in one click.",
   "permissions": [
     "activeTab",
