@@ -591,42 +591,54 @@ export function injectableScanner() {
     description: metaDesc || ogDesc || '',
     industry: 'Unknown',
     type: (function() {
-      // Helper: count keyword hits (more hits = higher confidence)
-      function score(keywords) {
-        var count = 0;
-        for (var ki = 0; ki < keywords.length; ki++) {
-          if (bodyText.includes(keywords[ki])) count++;
-        }
-        return count;
-      }
-
-      // Check domain-based signals first (most reliable)
+      // Domain-based signals first (most reliable)
       if (domain.endsWith('.gov') || domain.endsWith('.gov.in') || domain.endsWith('.nic.in') || domain.endsWith('.gov.uk') || domain.endsWith('.gov.au')) return 'government';
       if (domain.endsWith('.edu') || domain.endsWith('.ac.in') || domain.endsWith('.ac.uk')) return 'education';
       if (domain.endsWith('.org') && (bodyText.includes('donate') || bodyText.includes('nonprofit') || bodyText.includes('charity'))) return 'nonprofit';
 
-      // Check for specific ecommerce platforms (most reliable)
+      // Ecommerce platform detection (most reliable)
       var hasEcomPlatform = html.includes('Shopify.theme') || html.includes('myshopify.com') || !!doc.querySelector('meta[name="shopify-checkout-api-token"]') || html.includes('woocommerce') || html.includes('cdn.bigcommerce') || html.includes('Magento_');
       if (hasEcomPlatform) return 'ecommerce';
 
-      // Score-based classification (need 2+ keyword hits to classify)
+      // Extract high-value text zones (weighted more than body text)
+      var pageTitle = (title || '').toLowerCase();
+      var metaDescLower = (metaDesc || '').toLowerCase();
+      var h1Text = Array.from(doc.querySelectorAll('h1')).map(function(el) { return (el.textContent || '').toLowerCase(); }).join(' ');
+      var h2Text = Array.from(doc.querySelectorAll('h2')).map(function(el) { return (el.textContent || '').toLowerCase(); }).join(' ');
+      var navText = Array.from(doc.querySelectorAll('nav a, header a, [class*="nav"] a')).map(function(el) { return (el.textContent || '').toLowerCase(); }).join(' ');
+
+      // Weighted scoring: title=5x, meta=4x, h1=3x, h2=2x, nav=2x, body=1x
+      function wscore(keywords) {
+        var total = 0;
+        for (var ki = 0; ki < keywords.length; ki++) {
+          var kw = keywords[ki];
+          if (pageTitle.includes(kw)) total += 5;
+          if (metaDescLower.includes(kw)) total += 4;
+          if (h1Text.includes(kw)) total += 3;
+          if (h2Text.includes(kw)) total += 2;
+          if (navText.includes(kw)) total += 2;
+          if (bodyText.includes(kw)) total += 1;
+        }
+        return total;
+      }
+
       var scores = {
-        hospitality: score(['hotel', 'resort', 'check-in', 'book a room', 'accommodation', 'suites', 'rooms available', 'guest']),
-        restaurant: score(['restaurant', 'menu', 'dine', 'cuisine', 'reservation', 'chef', 'food ordering']),
-        education: score(['university', 'academic', 'semester', 'faculty', 'campus', 'students', 'admission', 'enroll']),
-        government: score(['government', 'ministry', 'citizen', 'public service', 'department of', 'official website']),
-        healthcare: score(['hospital', 'patient', 'doctor', 'appointment', 'medical', 'health care', 'clinical', 'treatment']),
-        nonprofit: score(['donate', 'non-profit', 'nonprofit', 'volunteer', 'mission', 'charity', 'foundation']),
-        realestate: score(['real estate', 'property for', 'sqft', 'bedroom', 'apartment', 'listing', 'for sale', 'for rent']),
-        agency: score(['agency', 'our clients', 'our work', 'case study', 'portfolio', 'we help companies', 'our services']),
-        saas: score(['free trial', 'sign up free', 'start free', 'pricing', 'per month', 'saas', 'platform', 'api']),
-        services: score(['consulting', 'professional services', 'our expertise', 'solutions', 'implementation']),
-        ecommerce: score(['add to cart', 'shop now', 'buy now', 'checkout', 'shopping cart', 'your order']),
+        hospitality: wscore(['hotel', 'resort', 'check-in', 'book a room', 'accommodation', 'suites', 'rooms available', 'guest room', 'lodging', 'stay with us']),
+        restaurant: wscore(['restaurant', 'dine', 'cuisine', 'chef', 'food order', 'our menu', 'table for', 'delivery']),
+        education: wscore(['university', 'academic', 'semester', 'faculty', 'campus', 'admission', 'enroll', 'undergraduate', 'postgraduate', 'syllabus']),
+        government: wscore(['government', 'ministry', 'citizen', 'public service', 'department of', 'official portal', 'scheme', 'tender']),
+        healthcare: wscore(['hospital', 'patient', 'doctor', 'appointment', 'specialit', 'clinical', 'treatment', 'diagnosis', 'opd', 'emergency']),
+        nonprofit: wscore(['donate', 'non-profit', 'nonprofit', 'volunteer', 'our mission', 'charity', 'humanitarian', 'cause']),
+        realestate: wscore(['real estate', 'sqft', 'bhk', 'bedroom', 'apartment', 'for sale', 'for rent', 'plot', 'villa', 'floor plan']),
+        agency: wscore(['digital agency', 'marketing agency', 'creative agency', 'our clients', 'our work', 'case stud', 'portfolio', 'we help', 'we build', 'our team of experts']),
+        saas: wscore(['free trial', 'sign up free', 'start free', 'get started', 'pricing', 'per month', 'per user', 'saas', 'dashboard', 'integrate', 'automate']),
+        services: wscore(['consulting', 'professional services', 'our expertise', 'it services', 'outsourc', 'managed services', 'advisory', 'transformation']),
+        ecommerce: wscore(['add to cart', 'shop now', 'buy now', 'checkout', 'shopping cart', 'your order', 'free shipping', 'product']),
       };
 
-      // Find the category with highest score (minimum 2 to classify)
+      // Find highest score (minimum threshold of 4 to classify)
       var bestType = 'unknown';
-      var bestScore = 1; // minimum threshold of 2
+      var bestScore = 3;
       for (var t in scores) {
         if (scores[t] > bestScore) {
           bestScore = scores[t];

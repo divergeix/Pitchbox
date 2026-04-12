@@ -43,10 +43,14 @@ export function CompanyCard({ company, detectionCount }: Props) {
 
       <div className="flex flex-wrap gap-2 mt-3">
         {company.industry && company.industry !== 'Unknown' && (
-          <span className="badge bg-pitch-border text-pitch-text-muted">{company.industry}</span>
+          <span className={`badge ${company.aiClassified ? 'bg-purple-900/30 text-purple-400 border border-purple-800/40' : 'bg-pitch-border text-pitch-text-muted'}`}>
+            {company.industry}{company.aiClassified ? ' (AI)' : ''}
+          </span>
         )}
         {company.type !== 'unknown' && (
-          <span className="badge bg-pitch-border text-pitch-text-muted capitalize">{company.type}</span>
+          <span className={`badge capitalize ${company.aiClassified ? 'bg-pitch-accent/20 text-pitch-accent border border-pitch-accent/30' : 'bg-pitch-border text-pitch-text-muted'}`}>
+            {company.type}{company.aiClassified ? ' (AI)' : ''}
+          </span>
         )}
         {company.estimatedSize && (
           <span className="badge bg-pitch-border text-pitch-text-muted">{company.estimatedSize} employees</span>

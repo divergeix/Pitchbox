@@ -15,6 +15,7 @@ import { Settings } from './components/Settings';
 import { checkScanAllowed, UsageCheck } from '../lib/usage-meter';
 import { getSettings, UserSettings, trackScan, addToScanHistory, saveProspect, isProspectSaved, SavedProspect, getScanHistory } from '../lib/storage';
 import { injectableScanner } from '../lib/injectable-scanner';
+import { classifyCompanyWithAI } from '../lib/ai-classifier';
 
 type Tab = 'scan' | 'prospects' | 'history' | 'settings';
 
@@ -119,11 +120,36 @@ export default function App() {
       if (scanData) {
         trackScan();
         addToScanHistory(scanData.domain, scanData.detections.length);
-        // Persist to session storage so it survives sidepanel close/reopen
         chrome.storage.session?.set({ pitchbox_last_scan: scanData });
         processScanResult(scanData as ScanResult);
         checkScanAllowed().then(setUsageCheck);
         getScanHistory().then(setScanHistory);
+
+        // AI-assisted classification (runs in background, updates when done)
+        const currentSettings = await getSettings();
+        if (currentSettings.apiKey && scanData.isCompanyWebsite) {
+          classifyCompanyWithAI(
+            currentSettings.apiKey,
+            scanData.company,
+            scanData.detections,
+            scanData.company.type
+          ).then((aiResult) => {
+            if (aiResult.type !== scanData.company.type || aiResult.industry !== 'Unknown') {
+              const updatedScan = {
+                ...scanData,
+                company: {
+                  ...scanData.company,
+                  type: aiResult.type,
+                  industry: aiResult.industry,
+                  aiClassified: true,
+                  aiConfidence: aiResult.confidence,
+                },
+              };
+              chrome.storage.session?.set({ pitchbox_last_scan: updatedScan });
+              processScanResult(updatedScan as ScanResult);
+            }
+          }).catch(() => {}); // Silent fail - local classification still works
+        }
       } else {
         setError('Could not scan this page. The site may be blocking scripts.');
         setScanning(false);

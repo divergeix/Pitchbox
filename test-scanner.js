@@ -222,9 +222,33 @@ function runScanner(html, url) {
   ck('Vercel', 'Infra', () => html.includes('vercel.app') || html.includes('vercel-analytics'), 'Vercel');
   ck('AWS', 'Infra', () => html.includes('.amazonaws.com') || html.includes('cloudfront.net'), 'AWS');
 
-  // Type detection - score-based (same logic as injectable-scanner)
+  // Type detection - weighted scoring (same logic as injectable-scanner)
   const bodyText = html.replace(/<[^>]*>/g, ' ').toLowerCase();
-  function score(keywords) { return keywords.filter(k => bodyText.includes(k)).length; }
+
+  // Extract high-value text zones
+  const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+  const pageTitle = (titleMatch ? titleMatch[1] : '').toLowerCase();
+  const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i);
+  const metaDescLower = (metaDescMatch ? metaDescMatch[1] : '').toLowerCase();
+  const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/gis);
+  const h1Text = (h1Match || []).map(h => h.replace(/<[^>]*>/g, '').toLowerCase()).join(' ');
+  const h2Match = html.match(/<h2[^>]*>(.*?)<\/h2>/gis);
+  const h2Text = (h2Match || []).map(h => h.replace(/<[^>]*>/g, '').toLowerCase()).join(' ');
+  const navMatch = html.match(/<nav[^>]*>(.*?)<\/nav>/gis);
+  const navText = (navMatch || []).map(n => n.replace(/<[^>]*>/g, '').toLowerCase()).join(' ');
+
+  function wscore(keywords) {
+    let total = 0;
+    for (const kw of keywords) {
+      if (pageTitle.includes(kw)) total += 5;
+      if (metaDescLower.includes(kw)) total += 4;
+      if (h1Text.includes(kw)) total += 3;
+      if (h2Text.includes(kw)) total += 2;
+      if (navText.includes(kw)) total += 2;
+      if (bodyText.includes(kw)) total += 1;
+    }
+    return total;
+  }
 
   // Domain-based first
   let type = 'unknown';
@@ -236,19 +260,19 @@ function runScanner(html, url) {
     if (hasEcomPlatform) type = 'ecommerce';
     else {
       const scores = {
-        hospitality: score(['hotel', 'resort', 'check-in', 'book a room', 'accommodation', 'suites', 'rooms available', 'guest']),
-        restaurant: score(['restaurant', 'menu', 'dine', 'cuisine', 'reservation', 'chef', 'food ordering']),
-        education: score(['university', 'academic', 'semester', 'faculty', 'campus', 'students', 'admission', 'enroll']),
-        government: score(['government', 'ministry', 'citizen', 'public service', 'department of', 'official website']),
-        healthcare: score(['hospital', 'patient', 'doctor', 'appointment', 'medical', 'health care', 'clinical', 'treatment']),
-        nonprofit: score(['donate', 'non-profit', 'nonprofit', 'volunteer', 'mission', 'charity', 'foundation']),
-        realestate: score(['real estate', 'property for', 'sqft', 'bedroom', 'apartment', 'listing', 'for sale', 'for rent']),
-        agency: score(['agency', 'our clients', 'our work', 'case study', 'portfolio', 'we help companies', 'our services']),
-        saas: score(['free trial', 'sign up free', 'start free', 'pricing', 'per month', 'saas', 'platform', 'api']),
-        services: score(['consulting', 'professional services', 'our expertise', 'solutions', 'implementation']),
-        ecommerce: score(['add to cart', 'shop now', 'buy now', 'checkout', 'shopping cart', 'your order']),
+        hospitality: wscore(['hotel', 'resort', 'check-in', 'book a room', 'accommodation', 'suites', 'rooms available', 'guest room', 'lodging', 'stay with us']),
+        restaurant: wscore(['restaurant', 'dine', 'cuisine', 'chef', 'food order', 'our menu', 'table for', 'delivery']),
+        education: wscore(['university', 'academic', 'semester', 'faculty', 'campus', 'admission', 'enroll', 'undergraduate', 'postgraduate', 'syllabus']),
+        government: wscore(['government', 'ministry', 'citizen', 'public service', 'department of', 'official portal', 'scheme', 'tender']),
+        healthcare: wscore(['hospital', 'patient', 'doctor', 'appointment', 'specialit', 'clinical', 'treatment', 'diagnosis', 'opd', 'emergency']),
+        nonprofit: wscore(['donate', 'non-profit', 'nonprofit', 'volunteer', 'our mission', 'charity', 'humanitarian', 'cause']),
+        realestate: wscore(['real estate', 'sqft', 'bhk', 'bedroom', 'apartment', 'for sale', 'for rent', 'plot', 'villa', 'floor plan']),
+        agency: wscore(['digital agency', 'marketing agency', 'creative agency', 'our clients', 'our work', 'case stud', 'portfolio', 'we help', 'we build', 'our team of experts']),
+        saas: wscore(['free trial', 'sign up free', 'start free', 'get started', 'pricing', 'per month', 'per user', 'saas', 'dashboard', 'integrate', 'automate']),
+        services: wscore(['consulting', 'professional services', 'our expertise', 'it services', 'outsourc', 'managed services', 'advisory', 'transformation']),
+        ecommerce: wscore(['add to cart', 'shop now', 'buy now', 'checkout', 'shopping cart', 'your order', 'free shipping', 'product']),
       };
-      let best = 'unknown', bestScore = 1;
+      let best = 'unknown', bestScore = 3;
       for (const [t, s] of Object.entries(scores)) { if (s > bestScore) { bestScore = s; best = t; } }
       type = best;
     }
