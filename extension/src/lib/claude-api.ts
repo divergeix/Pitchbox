@@ -1,6 +1,6 @@
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
-const MAX_TOKENS = 1024;
+const MAX_TOKENS = 2048;
 
 export async function callClaude(apiKey: string, systemPrompt: string, userMessage: string): Promise<string> {
   const response = await fetch(ANTHROPIC_API_URL, {

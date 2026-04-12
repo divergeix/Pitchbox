@@ -15,12 +15,43 @@ export function Settings({ onSave }: Props) {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [saved, setSaved] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [apiKeyStatus, setApiKeyStatus] = useState<'none' | 'checking' | 'valid' | 'invalid'>('none');
 
   useEffect(() => {
-    getSettings().then(setForm);
+    getSettings().then((s) => {
+      setForm(s);
+      if (s.apiKey) validateApiKey(s.apiKey);
+    });
     getUserPlan().then(setPlan);
     getUsage().then(setUsage);
   }, []);
+
+  const validateApiKey = async (key: string) => {
+    if (!key || !key.startsWith('sk-ant-')) {
+      setApiKeyStatus(key ? 'invalid' : 'none');
+      return;
+    }
+    setApiKeyStatus('checking');
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'hi' }],
+        }),
+      });
+      setApiKeyStatus(res.ok ? 'valid' : 'invalid');
+    } catch {
+      setApiKeyStatus('invalid');
+    }
+  };
 
   const handleSave = async () => {
     await saveSettings(form);
@@ -69,14 +100,38 @@ export function Settings({ onSave }: Props) {
 
       {/* API Key */}
       <div className="card">
-        <div className="section-title">Claude API Key</div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="section-title mb-0">Claude API Key</div>
+          {apiKeyStatus === 'valid' && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-green-400 font-medium">
+              <span className="w-2 h-2 rounded-full bg-green-400"></span> Connected
+            </span>
+          )}
+          {apiKeyStatus === 'invalid' && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-red-400 font-medium">
+              <span className="w-2 h-2 rounded-full bg-red-400"></span> Invalid
+            </span>
+          )}
+          {apiKeyStatus === 'checking' && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-yellow-400 font-medium">
+              <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span> Checking...
+            </span>
+          )}
+        </div>
         <div className="relative">
           <input
             type={showKey ? 'text' : 'password'}
             value={form.apiKey}
-            onChange={e => updateField('apiKey', e.target.value)}
+            onChange={e => {
+              updateField('apiKey', e.target.value);
+              if (e.target.value.length > 10) validateApiKey(e.target.value);
+              else setApiKeyStatus(e.target.value ? 'invalid' : 'none');
+            }}
             placeholder="sk-ant-..."
-            className="input-field text-sm pr-16"
+            className={`input-field text-sm pr-16 ${
+              apiKeyStatus === 'valid' ? 'border-green-500/50' :
+              apiKeyStatus === 'invalid' ? 'border-red-500/50' : ''
+            }`}
           />
           <button
             onClick={() => setShowKey(!showKey)}

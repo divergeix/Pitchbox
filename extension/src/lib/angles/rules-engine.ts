@@ -243,8 +243,8 @@ const rules: AngleRule[] = [
     description: 'Missing social proof or trust signals. Conversion may suffer.',
     suggestedOpener: "Your product looks solid but the site could do more to build trust with new visitors.",
     condition: (signals) => {
-      const match = signals.some(s => s.id === 'no-case-studies' || s.id === 'ecom-no-trust');
-      return { match, confidence: 70, sources: ['no-case-studies', 'ecom-no-trust'] };
+      const match = signals.some(s => s.id === 'no-case-studies' || s.id === 'no-case-studies-commercial' || s.id === 'ecom-no-trust');
+      return { match, confidence: 70, sources: ['no-case-studies', 'no-case-studies-commercial', 'ecom-no-trust'] };
     },
   },
   {
@@ -267,6 +267,156 @@ const rules: AngleRule[] = [
     condition: (signals) => {
       const match = signals.some(s => s.id === 'no-cookie-consent');
       return { match, confidence: 55, sources: ['no-cookie-consent'] };
+    },
+  },
+
+  // --- New angles for smaller/minimal sites ---
+
+  {
+    id: 'agency-growth',
+    title: 'Agency scaling and client acquisition',
+    category: 'founder',
+    description: 'Agency business detected. Opportunity to help with lead gen, positioning, or client delivery.',
+    suggestedOpener: "Running an agency is tough. Curious how you're handling lead gen beyond referrals right now.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'agency-business');
+      return { match, confidence: 72, sources: ['agency-business'] };
+    },
+  },
+  {
+    id: 'small-team-efficiency',
+    title: 'Small team efficiency play',
+    category: 'operations',
+    description: 'Small team that could benefit from automation and better tooling.',
+    suggestedOpener: "With a lean team, every hour matters. Are there workflows you wish ran on autopilot?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'small-team');
+      return { match, confidence: 62, sources: ['small-team'] };
+    },
+  },
+  {
+    id: 'platform-upgrade',
+    title: 'Website platform upgrade',
+    category: 'design-cro',
+    description: 'Template builder detected. Business may be outgrowing the platform.',
+    suggestedOpener: "Noticed your site is on a template builder. As you grow, that can start limiting what you can do.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'template-builder');
+      return { match, confidence: 68, sources: ['template-builder'] };
+    },
+  },
+  {
+    id: 'marketing-automation-gap',
+    title: 'Marketing automation opportunity',
+    category: 'marketing',
+    description: 'No marketing automation detected. Email nurturing and lead scoring could be set up.',
+    suggestedOpener: "I didn't see any marketing automation on your site. How are you following up with leads today?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'no-marketing-automation');
+      return { match, confidence: 70, sources: ['no-marketing-automation'] };
+    },
+  },
+  {
+    id: 'social-proof-gap',
+    title: 'Social proof and case study opportunity',
+    category: 'design-cro',
+    description: 'No case studies or customer stories visible. Adding proof points could boost conversions.',
+    suggestedOpener: "Your offering looks strong, but I didn't see case studies. Even one or two can make a big difference.",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'no-case-studies-commercial');
+      return { match, confidence: 68, sources: ['no-case-studies-commercial'] };
+    },
+  },
+  {
+    id: 'minimal-stack-buildout',
+    title: 'Digital infrastructure buildout',
+    category: 'growth',
+    description: 'Very few tools detected. Opportunity to build out analytics, CRM, and marketing stack.',
+    suggestedOpener: "Your site is clean but running light on tools. Are you tracking visitor behavior and converting leads effectively?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'minimal-stack');
+      return { match, confidence: 65, sources: ['minimal-stack'] };
+    },
+  },
+  {
+    id: 'lead-capture-missing',
+    title: 'Lead capture improvement',
+    category: 'design-cro',
+    description: 'No demo, trial, or clear conversion path. Visitors may leave without engaging.',
+    suggestedOpener: "Visited your site but couldn't find an easy way to get started or reach out. Is that intentional?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'no-demo-or-trial');
+      return { match, confidence: 66, sources: ['no-demo-or-trial'] };
+    },
+  },
+  {
+    id: 'seo-investment',
+    title: 'SEO and organic growth investment',
+    category: 'marketing',
+    description: 'Structured data detected. Company is SEO-aware and may be ready to scale organic efforts.',
+    suggestedOpener: "Saw you have structured data set up. Looks like organic is on your radar. What's your traffic goal?",
+    condition: (signals) => {
+      const match = signals.some(s => s.id === 'seo-aware');
+      return { match, confidence: 58, sources: ['seo-aware'] };
+    },
+  },
+
+  // AI angles - always available
+  {
+    id: 'ai-automation',
+    title: 'AI-powered workflow automation',
+    category: 'operations',
+    description: 'AI can automate repetitive tasks like data entry, email responses, report generation, and customer routing. Reduces manual work by 40-60%.',
+    suggestedOpener: "Quick question — how much time does your team spend on repetitive tasks like data entry or reporting? AI can cut that in half.",
+    condition: (signals, _d, company) => {
+      const match = signals.some(s => s.id === 'ai-opportunity');
+      return { match, confidence: 78, sources: ['ai-opportunity'] };
+    },
+  },
+  {
+    id: 'ai-customer-experience',
+    title: 'AI-enhanced customer experience',
+    category: 'growth',
+    description: 'AI chatbots, personalized recommendations, and intelligent support can transform customer interactions. Reduces response time and increases satisfaction.',
+    suggestedOpener: "Are your customers getting instant answers when they need them? AI-powered support can handle 70% of queries without human intervention.",
+    condition: (signals, detections) => {
+      const noChat = !detections.some(d => d.category === 'Sales / Support');
+      const match = signals.some(s => s.id === 'ai-opportunity') && noChat;
+      return { match, confidence: 75, sources: ['ai-opportunity'] };
+    },
+  },
+  {
+    id: 'ai-content-marketing',
+    title: 'AI-powered content and marketing',
+    category: 'marketing',
+    description: 'AI can scale content production, personalize email campaigns, optimize ad copy, and generate social media content. 10x output without 10x headcount.',
+    suggestedOpener: "Content is king but creating it is expensive. AI can help you produce 10x more high-quality content without hiring a bigger team.",
+    condition: (signals, _d, company) => {
+      const match = signals.some(s => s.id === 'ai-opportunity') && (company.hasBlog || company.type === 'agency');
+      return { match, confidence: 76, sources: ['ai-opportunity', 'content-motion'] };
+    },
+  },
+  {
+    id: 'ai-sales-intelligence',
+    title: 'AI-driven sales intelligence',
+    category: 'revops',
+    description: 'AI can qualify leads automatically, predict deal outcomes, draft personalized outreach, and surface buying signals from prospect behavior.',
+    suggestedOpener: "How are you prioritizing which leads to call first? AI can score and rank your pipeline so your team focuses on the highest-value prospects.",
+    condition: (signals, _d, company) => {
+      const match = signals.some(s => s.id === 'ai-opportunity') && (company.type === 'saas' || company.type === 'services');
+      return { match, confidence: 74, sources: ['ai-opportunity'] };
+    },
+  },
+  {
+    id: 'ai-data-analytics',
+    title: 'AI-powered analytics and insights',
+    category: 'operations',
+    description: 'AI can turn raw data into actionable insights, build dashboards that explain themselves, and predict trends before they happen.',
+    suggestedOpener: "Are you making decisions based on data or gut feel? AI analytics can surface patterns your team would never spot manually.",
+    condition: (signals, detections) => {
+      const hasAnalytics = detections.some(d => d.category === 'Analytics');
+      const match = signals.some(s => s.id === 'ai-opportunity') && hasAnalytics;
+      return { match, confidence: 70, sources: ['ai-opportunity'] };
     },
   },
 ];

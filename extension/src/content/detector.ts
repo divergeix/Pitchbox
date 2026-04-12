@@ -28,7 +28,7 @@ function isCompanyWebsite(url: string): boolean {
   ];
   try {
     const hostname = new URL(url).hostname.toLowerCase();
-    return !skipDomains.some(d => hostname.includes(d)) && hostname.includes('.');
+    return !skipDomains.some(d => hostname === d || hostname.endsWith('.' + d)) && hostname.includes('.');
   } catch {
     return false;
   }
@@ -86,8 +86,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true;
 });
 
-// Auto-scan on load
-const autoResult = scanPage();
-if (autoResult.isCompanyWebsite && autoResult.detections.length > 0) {
-  chrome.runtime.sendMessage({ type: 'SCAN_COMPLETE', data: autoResult });
+// Auto-scan on load (wrapped in try-catch to prevent crashing the listener)
+try {
+  const autoResult = scanPage();
+  if (autoResult.isCompanyWebsite && autoResult.detections.length > 0) {
+    chrome.runtime.sendMessage({ type: 'SCAN_COMPLETE', data: autoResult }).catch(() => {});
+  }
+} catch (e) {
+  // Silent fail - manual scan via sidepanel still works
 }

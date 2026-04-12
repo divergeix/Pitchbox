@@ -7,6 +7,8 @@ import { Tone, TONES } from './tones';
 import { TemplateType } from './templates';
 import { callClaude } from '../claude-api';
 
+export type EmailLength = 'shorter' | 'medium' | 'longer' | 'custom';
+
 export interface DraftRequest {
   angle: OutreachAngle;
   company: CompanyProfile;
@@ -15,6 +17,8 @@ export interface DraftRequest {
   personaId: string;
   toneId: string;
   templateType: TemplateType;
+  emailLength?: EmailLength;
+  customInput?: string;
   userContext?: {
     userName?: string;
     companyName?: string;
@@ -36,7 +40,7 @@ export async function generateDraft(request: DraftRequest, apiKey: string): Prom
   const persona = PERSONAS.find(p => p.id === request.personaId) || PERSONAS[0];
   const tone = TONES.find(t => t.id === request.toneId) || TONES[0];
 
-  const systemPrompt = buildSystemPrompt(persona, tone, request.templateType);
+  const systemPrompt = buildSystemPrompt(persona, tone, request.templateType, request.emailLength);
   const userPrompt = buildUserPrompt(request);
 
   const response = await callClaude(apiKey, systemPrompt, userPrompt);
@@ -44,11 +48,19 @@ export async function generateDraft(request: DraftRequest, apiKey: string): Prom
   return parseDraftResponse(response, request);
 }
 
-function buildSystemPrompt(persona: Persona, tone: Tone, type: TemplateType): string {
+function buildSystemPrompt(persona: Persona, tone: Tone, type: TemplateType, emailLength?: EmailLength): string {
+  const emailLengthInstructions: Record<EmailLength, string> = {
+    shorter: 'Keep the email body concise - around 60-80 words (under 500 characters). Short, punchy, one key idea.',
+    medium: 'Write a medium-length email body - around 150-200 words (800-1200 characters). Include the insight, value prop, and a CTA.',
+    longer: 'Write a detailed, high-value email body - around 300-400 words (1500-2000 characters). Include specific insights, a clear value proposition, proof points, and a compelling CTA. Make every paragraph earn its place.',
+    custom: 'Follow the custom instructions provided by the user for length and content.',
+  };
+
   const typeInstructions: Record<TemplateType, string> = {
-    'cold-email': `Generate a cold email. Include a subject line on the first line prefixed with "Subject: ". Then a blank line. Then the email body. Keep it under 80 words. No greeting like "Hi [Name]" - start with the hook. End with a soft CTA (question, not a demand).`,
+    'cold-email': `Generate a cold email. Include a subject line on the first line prefixed with "Subject: ". Then a blank line. Then the email body. ${emailLengthInstructions[emailLength || 'medium']} No greeting like "Hi [Name]" - start with the hook. End with a soft CTA (question, not a demand).`,
     'linkedin-dm': `Generate a LinkedIn direct message. No subject line needed. Keep it under 50 words. Conversational, not formal. One clear idea. End with a question.`,
     'cold-call-opener': `Generate a cold call opening script. Keep it under 40 words. It should be what you say in the first 15 seconds. Natural, not scripted-sounding. Mention the signal immediately.`,
+    'whatsapp': `Generate a WhatsApp message. No subject line needed. Keep it under 80 words. Casual and conversational - like texting a professional contact. Use short paragraphs (1-2 sentences each). No formal greetings. Start with the key insight. End with a simple question. Do not use bullet points or formatting.`,
   };
 
   return `You are an expert SDR copywriter. You write cold outreach that gets replies.
@@ -73,7 +85,7 @@ Rules:
 }
 
 function buildUserPrompt(request: DraftRequest): string {
-  const { angle, company, signals, detections, userContext } = request;
+  const { angle, company, signals, detections, userContext, customInput } = request;
 
   const techStack = detections.map(d => `${d.name} (${d.category})`).slice(0, 10).join(', ');
   const signalSummary = signals.slice(0, 5).map(s => `- ${s.title}: ${s.description}`).join('\n');
@@ -103,6 +115,10 @@ Suggested opener direction: ${angle.suggestedOpener}`;
   }
   if (userContext?.userName) {
     prompt += `\nSender's name: ${userContext.userName}`;
+  }
+
+  if (customInput) {
+    prompt += `\n\nAdditional instructions from the user:\n${customInput}`;
   }
 
   return prompt;

@@ -1,4 +1,4 @@
-export type TemplateType = 'cold-email' | 'linkedin-dm' | 'cold-call-opener';
+export type TemplateType = 'cold-email' | 'linkedin-dm' | 'cold-call-opener' | 'whatsapp';
 
 export interface Template {
   id: string;

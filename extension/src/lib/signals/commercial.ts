@@ -149,5 +149,87 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
     });
   }
 
+  // --- Signals that fire on common/minimal patterns ---
+
+  // Small team signal
+  if (company.estimatedSize === '1-10' || company.estimatedSize === '11-50') {
+    signals.push({
+      id: 'small-team', type: 'commercial', title: 'Small/growing team',
+      description: `Estimated ${company.estimatedSize} employees. Likely wearing multiple hats and open to efficiency tools.`,
+      confidence: 'inferred', sourceDetections: [],
+    });
+  }
+
+  // Agency type
+  if (company.type === 'agency') {
+    signals.push({
+      id: 'agency-business', type: 'commercial', title: 'Agency business model',
+      description: 'Agency detected. Likely managing multiple clients with need for scalable processes.',
+      confidence: 'strong', sourceDetections: [],
+    });
+  }
+
+  // No demo or free trial (SaaS/services only)
+  if (!company.hasDemoPage && !company.hasFreeTrial && company.type !== 'ecommerce') {
+    signals.push({
+      id: 'no-demo-or-trial', type: 'commercial', title: 'No demo or trial offering visible',
+      description: 'No demo booking or free trial detected. May be missing inbound conversion opportunities.',
+      confidence: 'inferred', sourceDetections: [],
+    });
+  }
+
+  // No case studies
+  if (!company.hasCaseStudies && company.type !== 'ecommerce') {
+    signals.push({
+      id: 'no-case-studies-commercial', type: 'commercial', title: 'No visible social proof',
+      description: 'No case studies or customer stories found. Trust-building content may be missing.',
+      confidence: 'inferred', sourceDetections: [],
+    });
+  }
+
+  // Minimal tech stack (< 3 detections beyond SEO)
+  const nonSeoDetections = detections.filter(d => d.category !== 'SEO');
+  if (nonSeoDetections.length <= 2) {
+    signals.push({
+      id: 'minimal-stack', type: 'commercial', title: 'Minimal tech stack',
+      description: `Only ${nonSeoDetections.length} tools detected. Site may be underinvesting in digital infrastructure.`,
+      confidence: 'inferred', sourceDetections: nonSeoDetections.map(d => d.name),
+    });
+  }
+
+  // No marketing automation
+  if (marketingTools.length === 0) {
+    signals.push({
+      id: 'no-marketing-automation', type: 'commercial', title: 'No marketing automation detected',
+      description: 'No email marketing or automation tools found. Lead nurturing may be manual.',
+      confidence: 'inferred', sourceDetections: [],
+    });
+  }
+
+  // Basic/template site builder
+  if (detected.has('wix') || detected.has('squarespace')) {
+    signals.push({
+      id: 'template-builder', type: 'commercial', title: 'Template site builder in use',
+      description: `Site built on ${detected.has('wix') ? 'Wix' : 'Squarespace'}. May be outgrowing the platform as business scales.`,
+      confidence: 'inferred', sourceDetections: [detected.has('wix') ? 'Wix' : 'Squarespace'],
+    });
+  }
+
+  // Has structured data = SEO-aware
+  if (detections.some(d => d.name.includes('Structured data'))) {
+    signals.push({
+      id: 'seo-aware', type: 'commercial', title: 'SEO-aware setup',
+      description: 'Structured data (schema markup) detected. Company is investing in organic search.',
+      confidence: 'strong', sourceDetections: [],
+    });
+  }
+
+  // AI opportunity - always fires (every company can benefit from AI)
+  signals.push({
+    id: 'ai-opportunity', type: 'commercial', title: 'AI integration opportunity',
+    description: 'Every business can benefit from AI-powered automation, content generation, customer support, or data analysis.',
+    confidence: 'strong', sourceDetections: [],
+  });
+
   return signals;
 }
