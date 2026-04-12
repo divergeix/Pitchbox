@@ -14,12 +14,21 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
   const signals: Signal[] = [];
   const detected = new Set(detections.map(d => d.name.toLowerCase()));
   const categories = new Set(detections.map(d => d.category));
+  const marketingTools = detections.filter(d => d.category === 'Marketing');
+  const analyticsTools = detections.filter(d => d.category === 'Analytics');
+  const isB2B = company.type === 'saas' || company.type === 'agency' || company.type === 'services';
+  const isNonCommercial = company.type === 'government' || company.type === 'education' || company.type === 'nonprofit';
+  const isLocalBusiness = (company.type === 'hospitality' || company.type === 'restaurant' || company.type === 'healthcare' || company.type === 'realestate')
+    && company.estimatedSize !== '51-200' && company.estimatedSize !== '201-1000' && company.estimatedSize !== '1000+'
+    && !(company as any).aiClassified;
+  const isPlatform = company.type === 'travel' || company.type === 'fintech' || company.type === 'media' || company.type === 'entertainment' || company.type === 'logistics';
 
-  // Weak conversion path
-  const hasChat = detections.some(d => d.category === 'Sales / Support');
+  // Weak conversion path (only if we detected enough tech to trust the scan - skip for SPA sites with few detections)
+  const hasChat = detections.some(d => d.category === 'Sales / Support' || d.category === 'Chat / Support');
   const hasForms = detections.some(d => d.name.includes('Forms'));
   const hasDemoPage = company.hasDemoPage;
-  if (!hasChat && !hasForms && !hasDemoPage) {
+  const hasSufficientDetections = detections.filter(d => d.category !== 'SEO').length >= 3;
+  if (!hasChat && !hasForms && !hasDemoPage && hasSufficientDetections && !isPlatform) {
     signals.push({
       id: 'weak-conversion', type: 'commercial', title: 'Weak conversion path',
       description: 'No live chat, forms, or demo booking detected. Visitors may not have a clear way to convert.',
@@ -37,7 +46,6 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
   }
 
   // Fragmented martech stack
-  const marketingTools = detections.filter(d => d.category === 'Marketing');
   if (marketingTools.length >= 3) {
     signals.push({
       id: 'fragmented-martech', type: 'commercial', title: 'Fragmented marketing stack',
@@ -47,7 +55,6 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
   }
 
   // Heavy analytics setup
-  const analyticsTools = detections.filter(d => d.category === 'Analytics');
   if (analyticsTools.length >= 3) {
     signals.push({
       id: 'heavy-analytics', type: 'commercial', title: 'Heavy analytics stack',
@@ -150,10 +157,6 @@ export function detectCommercialSignals(detections: DetectionResult[], company: 
   }
 
   // --- Context-aware signals (only fire when relevant to company type + stack) ---
-
-  const isB2B = company.type === 'saas' || company.type === 'agency' || company.type === 'services';
-  const isNonCommercial = company.type === 'government' || company.type === 'education' || company.type === 'nonprofit';
-  const isLocalBusiness = company.type === 'hospitality' || company.type === 'restaurant' || company.type === 'healthcare' || company.type === 'realestate';
 
   // Small team signal (only for B2B companies where it's an actionable insight)
   if ((company.estimatedSize === '1-10' || company.estimatedSize === '11-50') && isB2B) {

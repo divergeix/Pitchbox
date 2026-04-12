@@ -14,7 +14,6 @@ import { ProspectList } from './components/ProspectList';
 import { Settings } from './components/Settings';
 import { checkScanAllowed, UsageCheck } from '../lib/usage-meter';
 import { getSettings, UserSettings, trackScan, addToScanHistory, saveProspect, isProspectSaved, SavedProspect, getScanHistory } from '../lib/storage';
-import { injectableScanner } from '../lib/injectable-scanner';
 import { classifyCompanyWithAI } from '../lib/ai-classifier';
 
 type Tab = 'scan' | 'prospects' | 'history' | 'settings';
@@ -111,12 +110,26 @@ export default function App() {
         return;
       }
 
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: injectableScanner,
-      });
+      let scanData: any = null;
 
-      const scanData = results?.[0]?.result;
+      try {
+        // Inject scanner as a file (avoids function serialization issues)
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['page-scanner.js'],
+        });
+        // Read result back using a file (no func serialization)
+        const readResult = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['read-result.js'],
+        });
+        scanData = readResult?.[0]?.result;
+      } catch (execErr: any) {
+        setError(`Scan blocked: ${execErr.message || 'Extension cannot access this page'}. Try refreshing the page.`);
+        setScanning(false);
+        return;
+      }
+
       if (scanData) {
         trackScan();
         addToScanHistory(scanData.domain, scanData.detections.length);

@@ -52,9 +52,7 @@ export function CompanyCard({ company, detectionCount }: Props) {
             {company.type}{company.aiClassified ? ' (AI)' : ''}
           </span>
         )}
-        {company.estimatedSize && (
-          <span className="badge bg-pitch-border text-pitch-text-muted">{company.estimatedSize} employees</span>
-        )}
+        {/* Employee count removed - unreliable without external data */}
         {company.copyrightYear && (
           <span className="badge bg-pitch-border text-pitch-text-muted">Est. {company.copyrightYear}</span>
         )}

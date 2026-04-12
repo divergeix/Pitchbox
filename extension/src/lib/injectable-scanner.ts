@@ -2,6 +2,7 @@
 // It CANNOT use imports, closures, or reference anything outside itself
 // Uses plain JS syntax only - no TypeScript annotations inside
 export function injectableScanner() {
+  try {
   var url = window.location.href;
   var hostname = new URL(url).hostname.toLowerCase();
   var domain = hostname.replace(/^www\./, '');
@@ -17,8 +18,10 @@ export function injectableScanner() {
     return { url: url, domain: domain, timestamp: Date.now(), detections: [], company: { name: '', domain: domain, tagline: '', description: '', industry: '', type: 'unknown', hasCareerPage: false, hasBlog: false, hasPricingPage: false, hasFreeTrial: false, hasDemoPage: false, hasCaseStudies: false, hasApiDocs: false, hasIntegrationsPage: false, estimatedSize: '' }, isCompanyWebsite: false };
   }
 
-  var html = document.documentElement.outerHTML;
   var doc = document;
+  // Limit HTML to 2MB to avoid serialization issues on large government/enterprise pages
+  var rawHtml = document.documentElement.outerHTML;
+  var html = rawHtml.length > 2000000 ? rawHtml.substring(0, 2000000) : rawHtml;
   var detections = [];
 
   var metaGenEl = doc.querySelector('meta[name="generator"]');
@@ -368,7 +371,7 @@ export function injectableScanner() {
   ck('Django', 'Backend', function() { return html.includes('csrfmiddlewaretoken'); }, 'Django CSRF token');
   ck('Ruby on Rails', 'Backend', function() { return html.includes('csrf-param') && html.includes('authenticity_token'); }, 'Rails CSRF tokens');
   ck('ASP.NET', 'Backend', function() { return html.includes('__VIEWSTATE') || html.includes('__EVENTTARGET'); }, 'ASP.NET ViewState');
-  ck('PHP', 'Backend', function() { var phpLinks = allLinks.filter(function(a) { return a.href.match(/\.php(\?|$|#)/); }); return phpLinks.length >= 2 && !html.includes('wp-content'); }, 'Multiple .php pages');
+  ck('PHP', 'Backend', function() { var phpLinks = links.filter(function(l) { return l.match(/\.php(\?|$|#)/); }); return phpLinks.length >= 2 && !html.includes('wp-content'); }, 'Multiple .php pages');
 
   // ========== SEARCH VERIFICATION (5) ==========
   ck('Google Search Console', 'Verification', function() { return !!doc.querySelector('meta[name="google-site-verification"]'); }, 'Google verification');
@@ -416,7 +419,7 @@ export function injectableScanner() {
   var companyName = ogSiteName || (title ? title.split(/\s*[-|]\s*/)[0].trim() : domain.split('.')[0]);
   companyName = companyName.charAt(0).toUpperCase() + companyName.slice(1);
 
-  var allLinks = Array.from(doc.querySelectorAll('a'));
+  var allLinks = Array.from(doc.querySelectorAll('a')).filter(function(a) { return a.href && typeof a.href === 'string'; });
   var links = allLinks.map(function(a) { return a.href.toLowerCase(); });
 
   // ========== SOCIAL LINKS EXTRACTION ==========
@@ -623,6 +626,7 @@ export function injectableScanner() {
       }
 
       var scores = {
+        travel: wscore(['flight', 'airline', 'travel', 'booking', 'hotel booking', 'holiday package', 'destination', 'itinerary', 'passport', 'visa', 'tourism']),
         hospitality: wscore(['hotel', 'resort', 'check-in', 'book a room', 'accommodation', 'suites', 'rooms available', 'guest room', 'lodging', 'stay with us']),
         restaurant: wscore(['restaurant', 'dine', 'cuisine', 'chef', 'food order', 'our menu', 'table for', 'delivery']),
         education: wscore(['university', 'academic', 'semester', 'faculty', 'campus', 'admission', 'enroll', 'undergraduate', 'postgraduate', 'syllabus']),
@@ -671,4 +675,22 @@ export function injectableScanner() {
   };
 
   return { url: url, domain: domain, timestamp: Date.now(), detections: detections, company: company, isCompanyWebsite: true };
+
+  } catch (scanError) {
+    // If scanner crashes, return minimal result instead of null
+    var errUrl = window.location.href;
+    var errHostname = new URL(errUrl).hostname.toLowerCase();
+    var errDomain = errHostname.replace(/^www\./, '');
+    var errTitle = (document.querySelector('title') || {}).textContent || errDomain;
+    return {
+      url: errUrl, domain: errDomain, timestamp: Date.now(),
+      detections: [{ name: 'Scan error: ' + (scanError.message || 'unknown'), category: 'Error', source: 'Scanner crash', confidence: 'low' }],
+      company: { name: errTitle, domain: errDomain, tagline: '', description: '', industry: 'Unknown', type: 'unknown',
+        hasCareerPage: false, hasBlog: false, hasPricingPage: false, hasFreeTrial: false, hasDemoPage: false,
+        hasCaseStudies: false, hasApiDocs: false, hasIntegrationsPage: false, estimatedSize: '',
+        socialLinks: {}, emails: [], phones: [], location: '', recentPosts: [], customerLogos: [],
+        testimonials: [], teamMembers: [], schedulingLink: '', copyrightYear: '' },
+      isCompanyWebsite: true
+    };
+  }
 }
