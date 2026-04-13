@@ -47,6 +47,18 @@
       <li>Publicly visible company metadata (company name from meta tags, domain name)</li>
       <li>Presence of common web tools (analytics, marketing, chat widgets)</li>
     </ul>
+
+    <h3>2.1.1 Deep Scan Feature</h3>
+    <p>When you explicitly click "Deep Scan", PitchBox fetches up to 10 additional publicly accessible subpages on the same website (e.g., /about, /pricing, /team) to gather more complete information. This feature:</p>
+    <ul>
+      <li>Only runs when you explicitly click the "Deep Scan" button - never automatically</li>
+      <li>Checks and respects the website's <strong>robots.txt</strong> file before scanning</li>
+      <li>Skips pages marked with <strong>noindex</strong> meta tags</li>
+      <li>Limits to 10 subpages maximum per deep scan</li>
+      <li>Rate-limits requests to 1 page every 1.5 seconds to avoid server load</li>
+      <li>Only scans pages on the same domain - never follows external links</li>
+      <li>All data is processed locally in your browser</li>
+    </ul>
     <div class="highlight">
       <p><strong>Important:</strong> This is functionally identical to a user pressing Ctrl+U (View Page Source) in their browser. We only read publicly served HTML. We do NOT access cookies, localStorage, session data, passwords, form inputs, or any private data on any website.</p>
     </div>

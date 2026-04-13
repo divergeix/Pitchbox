@@ -15,6 +15,7 @@ import { Settings } from './components/Settings';
 import { checkScanAllowed, UsageCheck } from '../lib/usage-meter';
 import { getSettings, UserSettings, trackScan, addToScanHistory, saveProspect, isProspectSaved, SavedProspect, getScanHistory } from '../lib/storage';
 import { classifyCompanyWithAI } from '../lib/ai-classifier';
+import { scanHTML, SubpageScanResult } from '../lib/html-scanner';
 
 type Tab = 'scan' | 'prospects' | 'history' | 'settings';
 
@@ -38,6 +39,10 @@ export default function App() {
   const [prospectSaved, setProspectSaved] = useState(false);
   const [savingProspect, setSavingProspect] = useState(false);
   const [scanHistory, setScanHistory] = useState<ScanHistoryEntry[]>([]);
+  const [deepScanning, setDeepScanning] = useState(false);
+  const [deepScanProgress, setDeepScanProgress] = useState('');
+  const [deepScanPages, setDeepScanPages] = useState(0);
+  const [deepScanDone, setDeepScanDone] = useState(0);
 
   useEffect(() => {
     getSettings().then(setSettings);
@@ -197,6 +202,174 @@ export default function App() {
     setSavingProspect(false);
   };
 
+  const handleDeepScan = async () => {
+    if (!scanResult || !scanResult.isCompanyWebsite) return;
+
+    setDeepScanning(true);
+    setDeepScanProgress('Checking robots.txt...');
+    setDeepScanDone(0);
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (!tab?.id) { setDeepScanning(false); return; }
+
+      const baseUrl = `${new URL(scanResult.url).protocol}//${new URL(scanResult.url).hostname}`;
+
+      // Step 1: Check robots.txt
+      let disallowedPaths: string[] = [];
+      try {
+        const robotsResp = await fetch(`${baseUrl}/robots.txt`, { signal: AbortSignal.timeout(5000) });
+        if (robotsResp.ok) {
+          const robotsTxt = await robotsResp.text();
+          const lines = robotsTxt.split('\n');
+          let isRelevantAgent = false;
+          for (const line of lines) {
+            const trimmed = line.trim().toLowerCase();
+            if (trimmed.startsWith('user-agent:')) {
+              const agent = trimmed.replace('user-agent:', '').trim();
+              isRelevantAgent = agent === '*' || agent === 'pitchbox';
+            }
+            if (isRelevantAgent && trimmed.startsWith('disallow:')) {
+              const path = trimmed.replace('disallow:', '').trim();
+              if (path) disallowedPaths.push(path);
+            }
+          }
+        }
+      } catch {
+        // robots.txt not found or error - proceed with caution
+      }
+
+      // Step 2: Get internal links from current page
+      setDeepScanProgress('Finding internal links...');
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['deep-scanner.js'] });
+      const linkResult = await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['read-deep-links.js'] });
+      let internalLinks: string[] = linkResult?.[0]?.result || [];
+
+      if (internalLinks.length === 0) {
+        setDeepScanProgress('No internal links found');
+        setDeepScanning(false);
+        return;
+      }
+
+      // Step 3: Filter out disallowed paths from robots.txt
+      internalLinks = internalLinks.filter(link => {
+        try {
+          const pathname = new URL(link).pathname;
+          return !disallowedPaths.some(dp => pathname.startsWith(dp));
+        } catch { return false; }
+      });
+
+      // Cap at 10 pages max
+      internalLinks = internalLinks.slice(0, 10);
+
+      setDeepScanPages(internalLinks.length);
+      setDeepScanProgress(`Scanning ${internalLinks.length} pages (respecting robots.txt)...`);
+
+      // Step 4: Fetch and scan each subpage with rate limiting
+      const allSubDetections: any[] = [...scanResult.detections];
+      const enrichedCompany = { ...scanResult.company };
+      let scannedCount = 0;
+
+      for (const link of internalLinks) {
+        try {
+          setDeepScanProgress(`(${scannedCount + 1}/${internalLinks.length}) ${new URL(link).pathname}`);
+
+          // Rate limit: wait 1.5 seconds between requests
+          if (scannedCount > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          }
+
+          const resp = await fetch(link, { signal: AbortSignal.timeout(8000) });
+          if (!resp.ok) { scannedCount++; setDeepScanDone(scannedCount); continue; }
+          const html = await resp.text();
+          if (html.length < 100) { scannedCount++; setDeepScanDone(scannedCount); continue; }
+
+          // Skip noindex pages
+          if (html.includes('noindex') && html.match(/<meta[^>]*name=["']robots["'][^>]*content=["'][^"']*noindex/i)) {
+            scannedCount++; setDeepScanDone(scannedCount); continue;
+          }
+
+          const subResult = scanHTML(html, link);
+
+          // Merge detections (deduplicate by name)
+          const existingNames = new Set(allSubDetections.map((d: any) => d.name));
+          for (const det of subResult.detections) {
+            if (!existingNames.has(det.name)) {
+              allSubDetections.push(det);
+              existingNames.add(det.name);
+            }
+          }
+
+          // Merge company info
+          if (subResult.hasCareerPage) enrichedCompany.hasCareerPage = true;
+          if (subResult.hasBlog) enrichedCompany.hasBlog = true;
+          if (subResult.hasPricingPage) enrichedCompany.hasPricingPage = true;
+          if (subResult.hasCaseStudies) enrichedCompany.hasCaseStudies = true;
+          if (subResult.hasApiDocs) enrichedCompany.hasApiDocs = true;
+          if (subResult.hasDemoPage) enrichedCompany.hasDemoPage = true;
+          if (subResult.hasFreeTrial) enrichedCompany.hasFreeTrial = true;
+
+          // Merge team members
+          if (subResult.teamMembers.length > 0 && (!enrichedCompany.teamMembers || enrichedCompany.teamMembers.length === 0)) {
+            enrichedCompany.teamMembers = subResult.teamMembers;
+          }
+          // Merge customer logos
+          if (subResult.customerLogos.length > 0) {
+            const existingLogos = new Set((enrichedCompany.customerLogos || []).map((l: string) => l.toLowerCase()));
+            for (const logo of subResult.customerLogos) {
+              if (!existingLogos.has(logo.toLowerCase())) {
+                enrichedCompany.customerLogos = [...(enrichedCompany.customerLogos || []), logo];
+                existingLogos.add(logo.toLowerCase());
+              }
+            }
+          }
+          // Merge emails
+          if (subResult.emails.length > 0) {
+            const existingEmails = new Set((enrichedCompany.emails || []).map((e: string) => e.toLowerCase()));
+            for (const email of subResult.emails) {
+              if (!existingEmails.has(email.toLowerCase())) {
+                enrichedCompany.emails = [...(enrichedCompany.emails || []), email];
+                existingEmails.add(email.toLowerCase());
+              }
+            }
+          }
+          // Merge phones
+          if (subResult.phones.length > 0) {
+            const existingPhones = new Set(enrichedCompany.phones || []);
+            for (const phone of subResult.phones) {
+              if (!existingPhones.has(phone)) {
+                enrichedCompany.phones = [...(enrichedCompany.phones || []), phone];
+                existingPhones.add(phone);
+              }
+            }
+          }
+
+          scannedCount++;
+          setDeepScanDone(scannedCount);
+        } catch {
+          // Skip failed pages
+          scannedCount++;
+          setDeepScanDone(scannedCount);
+        }
+      }
+
+      // Update scan result with merged data
+      const deepResult = {
+        ...scanResult,
+        detections: allSubDetections,
+        company: enrichedCompany,
+      };
+
+      chrome.storage.session?.set({ pitchbox_last_scan: deepResult });
+      processScanResult(deepResult as ScanResult);
+      setDeepScanProgress(`Done! Scanned ${scannedCount} pages. Found ${allSubDetections.length} total detections.`);
+    } catch (e: any) {
+      setDeepScanProgress(`Deep scan error: ${e.message}`);
+    } finally {
+      setDeepScanning(false);
+    }
+  };
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
@@ -307,6 +480,31 @@ export default function App() {
                 >
                   {savingProspect ? 'Saving...' : prospectSaved ? 'Prospect Saved' : 'Save Prospect'}
                 </button>
+
+                {/* Deep Scan Button */}
+                <button
+                  onClick={handleDeepScan}
+                  disabled={deepScanning}
+                  className={`w-full text-sm font-medium py-2 px-4 rounded-lg transition-colors duration-150 ${
+                    theme === 'dark'
+                      ? 'bg-pitch-border hover:bg-pitch-accent/20 text-pitch-text-muted'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                  } flex items-center justify-center gap-2`}
+                >
+                  {deepScanning ? (
+                    <>
+                      <span className="animate-spin w-3.5 h-3.5 border-2 border-pitch-accent border-t-transparent rounded-full" />
+                      {deepScanProgress}
+                    </>
+                  ) : (
+                    'Deep Scan (scan all pages)'
+                  )}
+                </button>
+                {deepScanProgress && !deepScanning && (
+                  <p className={`text-xs text-center ${theme === 'dark' ? 'text-pitch-success' : 'text-green-600'}`}>
+                    {deepScanProgress}
+                  </p>
+                )}
 
                 <StackCard detections={scanResult.detections} />
                 <SignalCard signals={signals} />
