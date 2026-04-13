@@ -112,15 +112,14 @@ export function scanHTML(html: string, url: string): SubpageScanResult {
   const pathLower = url.toLowerCase();
   const bodyText = html.replace(/<[^>]*>/g, ' ').toLowerCase();
 
-  const hasCaseStudies = pathLower.includes('/case-stud') || pathLower.includes('/customers') || pathLower.includes('/success-stories') ||
-    bodyText.includes('case study') || bodyText.includes('success story') || bodyText.includes('customer story');
-  const hasApiDocs = (pathLower.includes('/docs') || pathLower.includes('/api') || pathLower.includes('/developers')) &&
-    (bodyText.includes('endpoint') || bodyText.includes('api reference') || bodyText.includes('sdk'));
-  const hasDemoPage = bodyText.includes('book a demo') || bodyText.includes('request demo') || bodyText.includes('schedule demo');
-  const hasFreeTrial = bodyText.includes('free trial') || bodyText.includes('start free') || bodyText.includes('try free');
-  const hasPricingPage = pathLower.includes('/pricing') || pathLower.includes('/plans');
-  const hasBlog = pathLower.includes('/blog') || pathLower.includes('/articles');
-  const hasCareerPage = pathLower.includes('/careers') || pathLower.includes('/jobs');
+  const hasCaseStudies = ['/case-stud','/casestud','/customers','/customer-stor','/success-stor','/testimonial','/results','/portfolio','/our-work','/projects','/use-case','/usecases','/client-stor'].some(p => pathLower.includes(p)) ||
+    ['case study','case studies','success story','customer story','client story'].some(k => bodyText.includes(k));
+  const hasApiDocs = ['/api-reference','/api-docs','/api-documentation','/developers','/developer','/docs','/documentation','/sdk','/swagger','/redoc','/openapi'].some(p => pathLower.includes(p));
+  const hasDemoPage = ['book a demo','request demo','schedule demo','get a demo','request a demo','schedule a demo','contact sales','talk to sales','book a call','free consultation'].some(k => bodyText.includes(k));
+  const hasFreeTrial = ['free trial','start free','try free','try for free','free plan','get started free','sign up free','no credit card','14-day trial','30-day trial','free forever'].some(k => bodyText.includes(k));
+  const hasPricingPage = ['/pricing','/plans','/packages','/price','/billing','/subscriptions','/compare-plans','/editions','/tiers'].some(p => pathLower.includes(p));
+  const hasBlog = ['/blog','/blogs','/articles','/news','/resources','/insights','/updates','/journal','/newsroom','/stories','/learn','/library','/guides','/whitepapers','/posts'].some(p => pathLower.includes(p));
+  const hasCareerPage = ['/careers','/career','/jobs','/job-opening','/join-us','/join','/work-with-us','/openings','/vacancies','/hiring','/opportunities','/positions'].some(p => pathLower.includes(p));
 
   // Extract emails
   const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;

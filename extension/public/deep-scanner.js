@@ -9,11 +9,20 @@
     var internalLinks = [];
     var seen = {};
 
-    // Key pages to prioritize
-    var priorityPaths = ['/about', '/pricing', '/plans', '/features', '/products', '/services',
-      '/contact', '/careers', '/jobs', '/blog', '/case-studies', '/customers',
-      '/integrations', '/partners', '/team', '/company', '/solutions', '/platform',
-      '/resources', '/docs', '/security', '/trust', '/privacy', '/terms'];
+    // Key pages to prioritize (comprehensive list)
+    var priorityPaths = [
+      '/about', '/about-us', '/company', '/who-we-are', '/our-story',
+      '/pricing', '/plans', '/packages', '/editions', '/tiers',
+      '/features', '/products', '/services', '/solutions', '/platform',
+      '/contact', '/contact-us', '/get-in-touch',
+      '/careers', '/career', '/jobs', '/join-us', '/work-with-us', '/hiring',
+      '/blog', '/blogs', '/articles', '/news', '/insights', '/resources', '/learn',
+      '/case-studies', '/casestudies', '/customers', '/success-stories', '/testimonials', '/portfolio', '/our-work', '/use-cases',
+      '/integrations', '/marketplace', '/plugins', '/apps', '/partners', '/ecosystem',
+      '/team', '/our-team', '/leadership', '/people',
+      '/docs', '/documentation', '/developers', '/api',
+      '/security', '/trust', '/compliance',
+    ];
 
     for (var i = 0; i < allAnchors.length; i++) {
       var href = allAnchors[i].href;

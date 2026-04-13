@@ -47,7 +47,8 @@
       "Bash(grep -o \"executeScript.\\\\{0,100\\\\}\" \"C:/DIVERGEIX-2026-27/chrome webstore publish/Pitchbox/extension/dist/assets/sidepanel-DA3IHG7D.js\")",
       "Bash(grep -o \"function bt.\\\\{0,200\\\\}\\\\|bt=function.\\\\{0,200\\\\}\\\\|const bt=.\\\\{0,200\\\\}\" \"C:/DIVERGEIX-2026-27/chrome webstore publish/Pitchbox/extension/dist/assets/sidepanel-DA3IHG7D.js\")",
       "WebFetch(domain:www.makemytrip.com)",
-      "Bash(curl -sL -m 15 -o - \"https://www.makemytrip.com\")"
+      "Bash(curl -sL -m 15 -o - \"https://www.makemytrip.com\")",
+      "WebFetch(domain:www.batoi.com)"
     ]
   }
 }
