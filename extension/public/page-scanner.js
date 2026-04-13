@@ -192,18 +192,56 @@
     if (bodyText.includes('gdpr')) detections.push({ name: 'GDPR compliance', category: 'Trust / Compliance', source: 'Page text', confidence: 'strong' });
 
     // ========== CONTACT INFO ==========
+    // Email extraction - strict filtering to avoid false positives
     var emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
     var allEmails = (bodyText.match(emailRegex) || []);
+
+    // Obfuscated emails
     var obfText = bodyText.replace(/\s*\[at\]\s*/gi,'@').replace(/\s*\(at\)\s*/gi,'@').replace(/\s*\[dot\]\s*/gi,'.').replace(/\s*\(dot\)\s*/gi,'.');
     var obfEmails = (obfText.match(emailRegex) || []);
+
+    // Mailto links
     var mailtoEls = doc.querySelectorAll('a[href^="mailto:"]');
     var mailtoEmails = [];
     for(var mi=0;mi<mailtoEls.length;mi++){var mh=mailtoEls[mi].getAttribute('href');if(mh)mailtoEmails.push(mh.replace('mailto:','').split('?')[0].trim().toLowerCase());}
-    var combined = allEmails.concat(obfEmails).concat(mailtoEmails);
-    var companyEmails = combined.filter(function(e,i){return combined.indexOf(e)===i;}).slice(0,10);
 
+    var combined = allEmails.concat(obfEmails).concat(mailtoEmails);
+
+    // Filter out false positives: image filenames, CSS values, placeholders
+    var companyEmails = combined.filter(function(e) {
+      var lower = e.toLowerCase();
+      // Must have valid TLD (not .png, .jpg, .svg, .gif, .css, .js, .webp)
+      if (lower.match(/\.(png|jpg|jpeg|gif|svg|webp|css|js|ico|woff|ttf|eot|mp4|mp3|pdf|zip)$/)) return false;
+      // Must not be a placeholder
+      if (lower.includes('example') || lower.includes('xyz.com') || lower.includes('test@') || lower.includes('user@') || lower.includes('email@')) return false;
+      // Must not be a sprite/image reference
+      if (lower.includes('sprite') || lower.includes('icon') || lower.includes('logo') || lower.includes('image')) return false;
+      // Must have a real domain part (at least 2 chars before @, real TLD)
+      var parts = lower.split('@');
+      if (parts.length !== 2) return false;
+      if (parts[0].length < 2) return false;
+      if (!parts[1].includes('.')) return false;
+      // TLD must be valid (2-6 chars)
+      var tld = parts[1].split('.').pop();
+      if (!tld || tld.length < 2 || tld.length > 6) return false;
+      return true;
+    }).filter(function(e,i,a){return a.indexOf(e)===i;}).slice(0,10);
+
+    // Phone extraction - strict validation
     var phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g;
-    var phones = (bodyText.match(phoneRegex)||[]).filter(function(p){var d=p.replace(/\D/g,'');return d.length>=7&&d.length<=15;}).filter(function(p,i,a){return a.indexOf(p)===i;}).slice(0,3);
+    var rawPhones = (bodyText.match(phoneRegex)||[]);
+    var phones = rawPhones.filter(function(p) {
+      var d = p.replace(/\D/g, '');
+      // Must be 7-13 digits (real phone numbers)
+      if (d.length < 7 || d.length > 13) return false;
+      // Must not be all same digit (like 0000000)
+      if (/^(.)\1+$/.test(d)) return false;
+      // Must start with valid prefix (0, +, or country code)
+      if (!p.trim().match(/^[\+\(0-9]/)) return false;
+      // Must contain at least one separator (space, dash, dot) or start with + to look like a phone
+      if (!p.includes(' ') && !p.includes('-') && !p.includes('.') && !p.includes('(') && !p.startsWith('+') && d.length > 10) return false;
+      return true;
+    }).filter(function(p,i,a){return a.indexOf(p)===i;}).slice(0,5);
 
     // ========== SOCIAL LINKS ==========
     var socialLinks = {linkedin:'',twitter:'',facebook:'',instagram:'',youtube:'',github:''};

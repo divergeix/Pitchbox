@@ -152,12 +152,19 @@ export default function App() {
             scanData.detections,
             scanData.company.type
           ).then((aiResult) => {
-            if (aiResult.type !== scanData.company.type || aiResult.industry !== 'Unknown') {
+            // Only override type if local classification was 'unknown' or AI has high confidence
+            // Don't override specific types like 'travel' with generic 'ecommerce'
+            const specificTypes = ['travel', 'hospitality', 'restaurant', 'healthcare', 'government', 'education', 'nonprofit'];
+            const shouldOverrideType = scanData.company.type === 'unknown' ||
+              (aiResult.confidence === 'high' && !specificTypes.includes(scanData.company.type));
+            const finalType = shouldOverrideType ? aiResult.type : scanData.company.type;
+
+            if (finalType !== scanData.company.type || aiResult.industry !== 'Unknown') {
               const updatedScan = {
                 ...scanData,
                 company: {
                   ...scanData.company,
-                  type: aiResult.type,
+                  type: finalType,
                   industry: aiResult.industry,
                   aiClassified: true,
                   aiConfidence: aiResult.confidence,
