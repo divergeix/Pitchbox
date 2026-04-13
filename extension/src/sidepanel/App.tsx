@@ -17,6 +17,7 @@ import { getSettings, UserSettings, trackScan, addToScanHistory, saveProspect, i
 import { classifyCompanyWithAI } from '../lib/ai-classifier';
 import { generateAIAngles } from '../lib/angles/ai-angles';
 import { scanHTML, SubpageScanResult } from '../lib/html-scanner';
+import { exportScanReport } from '../lib/export-report';
 
 type Tab = 'scan' | 'prospects' | 'history' | 'settings';
 
@@ -534,6 +535,18 @@ export default function App() {
                     {deepScanProgress}
                   </p>
                 )}
+
+                {/* Export Button */}
+                <button
+                  onClick={() => exportScanReport(scanResult, signals, angles)}
+                  className={`w-full text-sm font-medium py-2 px-4 rounded-lg transition-colors duration-150 flex items-center justify-center gap-2 ${
+                    theme === 'dark'
+                      ? 'bg-pitch-border hover:bg-pitch-accent/20 text-pitch-text-muted'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  Export Report (PDF / Copy)
+                </button>
 
                 <StackCard detections={scanResult.detections} />
                 <SignalCard signals={signals} />
