@@ -11,6 +11,7 @@ export interface OutreachAngle {
   confidence: number; // 0-100
   sourceSignals: string[];
   suggestedOpener: string;
+  aiGenerated?: boolean;
 }
 
 export type AngleCategory =
@@ -520,6 +521,189 @@ const rules: AngleRule[] = [
       const match = signals.some(s => s.id === 'ecom-no-reviews');
       return { match, confidence: 80, sources: ['ecom-no-reviews'] };
     },
+  },
+
+  // ============ INDUSTRY-SPECIFIC ANGLES ============
+
+  // --- HOSPITALITY ---
+  {
+    id: 'hotel-direct-booking',
+    title: 'Direct booking optimization',
+    category: 'growth',
+    description: 'Hotels lose 15-25% commission to OTAs. Improving direct booking can significantly increase margins.',
+    suggestedOpener: "How much of your bookings come from OTAs vs direct? Most hotels can shift 10-20% to direct with the right website strategy.",
+    condition: (_s, _d, company) => ({ match: company.type === 'hospitality', confidence: 82, sources: [] }),
+  },
+  {
+    id: 'hotel-guest-experience',
+    title: 'Digital guest experience',
+    category: 'operations',
+    description: 'Pre-arrival emails, digital check-in, and post-stay review requests can transform guest satisfaction.',
+    suggestedOpener: "Are you sending pre-arrival emails or collecting reviews post-checkout? That touchpoint can drive repeat bookings.",
+    condition: (_s, _d, company) => ({ match: company.type === 'hospitality', confidence: 76, sources: [] }),
+  },
+  {
+    id: 'hotel-reputation',
+    title: 'Online reputation management',
+    category: 'marketing',
+    description: 'Reviews on Google, TripAdvisor, and Booking.com directly impact occupancy rates.',
+    suggestedOpener: "Your Google reviews are the first thing guests see. Are you actively managing and responding to them?",
+    condition: (_s, _d, company) => ({ match: company.type === 'hospitality', confidence: 74, sources: [] }),
+  },
+
+  // --- HEALTHCARE ---
+  {
+    id: 'health-patient-acquisition',
+    title: 'Digital patient acquisition',
+    category: 'marketing',
+    description: 'Patients search online before choosing a doctor or hospital. SEO and Google Business Profile are critical.',
+    suggestedOpener: "Most patients Google their symptoms before calling. Is your clinic showing up for the right search terms?",
+    condition: (_s, _d, company) => ({ match: company.type === 'healthcare', confidence: 80, sources: [] }),
+  },
+  {
+    id: 'health-appointment-booking',
+    title: 'Online appointment scheduling',
+    category: 'design-cro',
+    description: 'Online booking reduces phone calls and no-shows. Patients prefer self-service scheduling.',
+    suggestedOpener: "Do patients have to call to book an appointment? Online scheduling can cut phone load by 40% and reduce no-shows.",
+    condition: (signals, _d, company) => {
+      const noBooking = !signals.some(s => s.id === 'local-no-booking');
+      return { match: company.type === 'healthcare' && noBooking, confidence: 78, sources: [] };
+    },
+  },
+  {
+    id: 'health-patient-reviews',
+    title: 'Patient review management',
+    category: 'growth',
+    description: 'Healthcare decisions are heavily influenced by patient reviews. Managing them is critical.',
+    suggestedOpener: "Patient reviews on Google can make or break a practice. Are you actively collecting and responding to them?",
+    condition: (_s, _d, company) => ({ match: company.type === 'healthcare', confidence: 74, sources: [] }),
+  },
+
+  // --- SAAS SPECIFIC ---
+  {
+    id: 'saas-onboarding',
+    title: 'User onboarding optimization',
+    category: 'growth',
+    description: 'SaaS companies lose 40-60% of trial users in the first week. Onboarding is the biggest lever.',
+    suggestedOpener: "What does your trial-to-paid conversion look like? Most SaaS companies leave a lot on the table in onboarding.",
+    condition: (signals, _d, company) => {
+      const hasTrial = signals.some(s => s.id === 'free-trial');
+      return { match: company.type === 'saas' && hasTrial, confidence: 80, sources: ['free-trial'] };
+    },
+  },
+  {
+    id: 'saas-churn-reduction',
+    title: 'Churn reduction strategy',
+    category: 'revops',
+    description: 'Reducing churn by even 5% can increase profits by 25-95%. Usage data and health scores are key.',
+    suggestedOpener: "What's your current churn rate? Even a small improvement in retention has an outsized impact on revenue.",
+    condition: (_s, _d, company) => ({ match: company.type === 'saas', confidence: 72, sources: [] }),
+  },
+  {
+    id: 'saas-product-led',
+    title: 'Product-led growth acceleration',
+    category: 'growth',
+    description: 'Self-serve pricing and free trial suggest a PLG motion. In-app growth loops can accelerate it.',
+    suggestedOpener: "Your PLG setup looks solid. Are you using in-app prompts and usage triggers to drive expansion revenue?",
+    condition: (signals, _d, company) => {
+      const hasTrial = signals.some(s => s.id === 'free-trial');
+      const hasPricing = signals.some(s => s.id === 'pricing-page-exists');
+      return { match: company.type === 'saas' && hasTrial && hasPricing, confidence: 76, sources: [] };
+    },
+  },
+
+  // --- AGENCY SPECIFIC ---
+  {
+    id: 'agency-lead-gen',
+    title: 'Agency lead generation beyond referrals',
+    category: 'growth',
+    description: 'Most agencies rely on referrals. Building a predictable lead pipeline is the #1 growth challenge.',
+    suggestedOpener: "How do you generate new clients right now? Most agencies want to grow beyond referrals but struggle with outbound.",
+    condition: (_s, _d, company) => ({ match: company.type === 'agency', confidence: 78, sources: [] }),
+  },
+  {
+    id: 'agency-case-study-machine',
+    title: 'Case study production system',
+    category: 'marketing',
+    description: 'Agencies live and die by their portfolio. Systematizing case study production builds a sales asset library.',
+    suggestedOpener: "Your work speaks for itself, but are you turning every project into a case study? That's the best sales asset an agency can have.",
+    condition: (signals, _d, company) => {
+      const noCaseStudies = signals.some(s => s.id === 'no-case-studies-commercial');
+      return { match: company.type === 'agency' && noCaseStudies, confidence: 76, sources: [] };
+    },
+  },
+  {
+    id: 'agency-positioning',
+    title: 'Agency positioning and differentiation',
+    category: 'marketing',
+    description: 'Generic agency messaging makes it hard to stand out. Clear positioning wins better clients at higher rates.',
+    suggestedOpener: "What makes your agency different from the 10,000 others? If the answer isn't immediately clear on your site, positioning might be worth revisiting.",
+    condition: (_s, _d, company) => ({ match: company.type === 'agency', confidence: 72, sources: [] }),
+  },
+
+  // --- ECOMMERCE SPECIFIC ---
+  {
+    id: 'ecom-cart-abandonment',
+    title: 'Cart abandonment recovery',
+    category: 'ecommerce',
+    description: 'Average cart abandonment is 70%. Email and retargeting sequences can recover 10-15% of lost sales.',
+    suggestedOpener: "Are you recovering abandoned carts? Most stores leave 70% of their revenue on the table without a recovery flow.",
+    condition: (_s, _d, company) => ({ match: company.type === 'ecommerce', confidence: 80, sources: [] }),
+  },
+  {
+    id: 'ecom-retention',
+    title: 'Customer retention and LTV',
+    category: 'ecommerce',
+    description: 'Acquiring a new customer costs 5-25x more than retaining one. Post-purchase email flows drive repeat revenue.',
+    suggestedOpener: "What percentage of your customers buy a second time? Post-purchase email flows can significantly increase repeat purchases.",
+    condition: (_s, _d, company) => ({ match: company.type === 'ecommerce', confidence: 76, sources: [] }),
+  },
+
+  // --- SERVICES/CONSULTING ---
+  {
+    id: 'services-thought-leadership',
+    title: 'Thought leadership content strategy',
+    category: 'marketing',
+    description: 'Services companies win on trust. Regular thought leadership content positions you as the expert.',
+    suggestedOpener: "Are your founders or consultants publishing thought leadership content? That's the #1 trust builder for services firms.",
+    condition: (_s, _d, company) => ({ match: company.type === 'services', confidence: 74, sources: [] }),
+  },
+  {
+    id: 'services-proposal-automation',
+    title: 'Proposal and sales process automation',
+    category: 'operations',
+    description: 'Services companies spend too much time on proposals. Automating the process frees up selling time.',
+    suggestedOpener: "How long does it take your team to put together a proposal? Automation can cut that from days to hours.",
+    condition: (_s, _d, company) => ({ match: company.type === 'services', confidence: 70, sources: [] }),
+  },
+
+  // --- EDUCATION ---
+  {
+    id: 'edu-enrollment',
+    title: 'Digital enrollment funnel',
+    category: 'growth',
+    description: 'Student enrollment is increasingly digital. A strong online presence directly impacts admissions.',
+    suggestedOpener: "How are prospective students finding and applying to your institution? Most admissions teams are going digital-first.",
+    condition: (_s, _d, company) => ({ match: company.type === 'education', confidence: 74, sources: [] }),
+  },
+
+  // --- TRAVEL ---
+  {
+    id: 'travel-personalization',
+    title: 'Travel personalization engine',
+    category: 'growth',
+    description: 'Personalized recommendations based on search history and preferences increase booking conversion.',
+    suggestedOpener: "Are you personalizing travel recommendations based on user behavior? That can significantly lift booking rates.",
+    condition: (_s, _d, company) => ({ match: company.type === 'travel', confidence: 78, sources: [] }),
+  },
+  {
+    id: 'travel-loyalty',
+    title: 'Loyalty and rewards program',
+    category: 'revops',
+    description: 'Travel loyalty programs drive repeat bookings and increase customer lifetime value.',
+    suggestedOpener: "Do you have a loyalty program? Repeat travelers are your most profitable segment.",
+    condition: (_s, _d, company) => ({ match: company.type === 'travel', confidence: 74, sources: [] }),
   },
 ];
 

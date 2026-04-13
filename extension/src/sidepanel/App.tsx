@@ -15,6 +15,7 @@ import { Settings } from './components/Settings';
 import { checkScanAllowed, UsageCheck } from '../lib/usage-meter';
 import { getSettings, UserSettings, trackScan, addToScanHistory, saveProspect, isProspectSaved, SavedProspect, getScanHistory } from '../lib/storage';
 import { classifyCompanyWithAI } from '../lib/ai-classifier';
+import { generateAIAngles } from '../lib/angles/ai-angles';
 import { scanHTML, SubpageScanResult } from '../lib/html-scanner';
 
 type Tab = 'scan' | 'prospects' | 'history' | 'settings';
@@ -173,7 +174,28 @@ export default function App() {
               chrome.storage.session?.set({ pitchbox_last_scan: updatedScan });
               processScanResult(updatedScan as ScanResult);
             }
-          }).catch(() => {}); // Silent fail - local classification still works
+          }).catch(() => {});
+
+          // Generate AI-custom angles (runs in background, appends when done)
+          const currentAngles = generateAngles(
+            [...detectCommercialSignals(scanData.detections, scanData.company),
+             ...detectOperationalSignals(scanData.detections, scanData.company),
+             ...detectNegativeSignals(scanData.detections, scanData.company)],
+            scanData.detections, scanData.company
+          );
+          generateAIAngles(
+            currentSettings.apiKey,
+            scanData.company,
+            scanData.detections,
+            currentAngles,
+            [...detectCommercialSignals(scanData.detections, scanData.company),
+             ...detectOperationalSignals(scanData.detections, scanData.company),
+             ...detectNegativeSignals(scanData.detections, scanData.company)],
+          ).then((aiAngles) => {
+            if (aiAngles.length > 0) {
+              setAngles(prev => [...prev, ...aiAngles]);
+            }
+          }).catch(() => {});
         }
       } else {
         setError('Could not scan this page. The site may be blocking scripts.');

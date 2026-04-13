@@ -30,6 +30,9 @@ export function AngleCard({ angles, selectedAngle, onSelectAngle }: Props) {
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{meta?.icon}</span>
                   <span className="text-sm font-medium text-pitch-text">{angle.title}</span>
+                  {angle.aiGenerated && (
+                    <span className="text-[9px] bg-purple-900/40 text-purple-400 border border-purple-800/50 px-1.5 py-0 rounded-full">AI</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className={`badge-${angle.strength === 'strong' ? 'strong' : angle.strength === 'medium' ? 'inferred' : 'low'}`}>
