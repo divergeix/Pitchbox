@@ -17,7 +17,7 @@ import { getSettings, UserSettings, trackScan, addToScanHistory, saveProspect, i
 import { classifyCompanyWithAI } from '../lib/ai-classifier';
 import { generateAIAngles } from '../lib/angles/ai-angles';
 import { scanHTML, SubpageScanResult } from '../lib/html-scanner';
-import { exportScanReport } from '../lib/export-report';
+import { exportScanReport, copyReportToClipboard } from '../lib/export-report';
 
 type Tab = 'scan' | 'prospects' | 'history' | 'settings';
 
@@ -38,6 +38,7 @@ export default function App() {
   const [usageCheck, setUsageCheck] = useState<UsageCheck | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [reportCopied, setReportCopied] = useState(false);
   const [prospectSaved, setProspectSaved] = useState(false);
   const [savingProspect, setSavingProspect] = useState(false);
   const [scanHistory, setScanHistory] = useState<ScanHistoryEntry[]>([]);
@@ -536,17 +537,35 @@ export default function App() {
                   </p>
                 )}
 
-                {/* Export Button */}
-                <button
-                  onClick={() => exportScanReport(scanResult, signals, angles)}
-                  className={`w-full text-sm font-medium py-2 px-4 rounded-lg transition-colors duration-150 flex items-center justify-center gap-2 ${
-                    theme === 'dark'
-                      ? 'bg-pitch-border hover:bg-pitch-accent/20 text-pitch-text-muted'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  Export Report (PDF / Copy)
-                </button>
+                {/* Export Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => exportScanReport(scanResult, signals, angles)}
+                    className={`flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-colors duration-150 ${
+                      theme === 'dark'
+                        ? 'bg-pitch-border hover:bg-pitch-accent/20 text-pitch-text-muted'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    Export PDF
+                  </button>
+                  <button
+                    onClick={() => {
+                      copyReportToClipboard(scanResult, signals, angles);
+                      setReportCopied(true);
+                      setTimeout(() => setReportCopied(false), 2000);
+                    }}
+                    className={`flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-colors duration-150 ${
+                      reportCopied
+                        ? 'bg-green-600/20 text-green-400'
+                        : theme === 'dark'
+                          ? 'bg-pitch-border hover:bg-pitch-accent/20 text-pitch-text-muted'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {reportCopied ? 'Copied!' : 'Copy Report'}
+                  </button>
+                </div>
 
                 <StackCard detections={scanResult.detections} />
                 <SignalCard signals={signals} />

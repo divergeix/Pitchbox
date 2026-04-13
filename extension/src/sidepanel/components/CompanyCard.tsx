@@ -53,7 +53,8 @@ export function CompanyCard({ company, detectionCount }: Props) {
           </span>
         )}
         {/* Employee count removed - unreliable without external data */}
-        {company.copyrightYear && (
+        {/* Copyright year removed - unreliable, often shows current year not founding year */
+        false && company.copyrightYear && (
           <span className="badge bg-pitch-border text-pitch-text-muted">Est. {company.copyrightYear}</span>
         )}
       </div>
